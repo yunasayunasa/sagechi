@@ -1,6 +1,6 @@
 # 賢者っち
 
-スマートフォン向け3D育成ゲーム「賢者っち」の本番プロジェクトです。現在は **Phase 1〜Phase 4** を実装しています。本物のワールドっちGLBがのんびり生活し、直接操作とお世話の傾向によって白／黒ワールドっちへ進化します。
+スマートフォン向け3D育成ゲーム「賢者っち」の本番プロジェクトです。現在は **Phase 1〜Phase 5** を実装しています。本物のワールドっちGLBがのんびり生活し、直接操作とお世話の傾向によって白／黒ワールドっちへ進化します。賢者っち10体は共通のWalking Character基盤で読み込み・自律歩行・Reactionを確認できます。
 
 背景はCC0 AssetとThree.js Geometryを組み合わせた **夏の庭・子供部屋・和室** の3ステージを実装しています。下部のマップボタンから切り替えられ、選択したステージは端末に保存されます。
 
@@ -38,10 +38,10 @@ npm run analyze:worldtchi
 
 - 本番ワールドっち: `public/models/worldtchi.glb`
 - 元GLBは変更しない
-- Phase 2では他キャラクターを配置・ロードしない
+- 賢者っち10体: `public/models/sages/`
 - モデル参照、Scale、Material方式、Controller種別、Hit Areaは `src/characters/character-config.ts`
 
-解析記録は `docs/worldtchi-analysis.md` にあります。
+解析記録は `docs/worldtchi-analysis.md` と `docs/sage-character-audit.md` にあります。
 
 ## Config
 
@@ -58,7 +58,7 @@ npm run analyze:worldtchi
 
 ## Debug Mode
 
-画面右上の `DEV` からHUDを切り替えます。FPS、Frame Time、delta、DPR、Character State、Target、Gesture、Draw Call、Triangleを表示します。HUD内のToggleでHit Area、Movement Area、Targetを可視化できます。通常表示ではすべて非表示です。
+画面右上の `DEV` からHUDを切り替えます。FPS、Frame Time、delta、DPR、Character State、Target、Gesture、Draw Call、Triangleを表示します。HUD内のToggleでHit Area、Movement Area、Targetを可視化できます。Phase 5の「賢者っち確認」は10体を一時表示しますが、育成結果とSaveは変更しません。
 
 ## 操作
 
@@ -90,6 +90,8 @@ npm run analyze:worldtchi
 - `core/Game`: Scene、Renderer、Loop、Lifecycle、Stage組立
 - `characters/CharacterLoader`: GLB、Toon変換、Scale/中心補正、Dispose
 - `characters/FloatingCharacterController`: 浮遊、自律行動、Reaction、PickUp
+- `characters/WalkingCharacterController`: 賢者っちのIdle、自律歩行、旋回、Reaction、PickUp
+- `characters/AnimationController`: 意味名Animation、CrossFade、LoopOnce復帰、Root Motion除去
 - `input/InputController`: Pointer EventとGesture優先順位
 - `camera/FollowCamera`: 追跡、制限付きSwipe、自動復帰
 - `effects/EffectSystem`: 差し替え可能なHeart / Sparkle
@@ -109,7 +111,8 @@ npm run analyze:worldtchi
 - Phase 2: ワールドっち — 完了
 - Phase 3: 育成 — 完了
 - Phase 4: 白黒進化 — 完了
-- Phase 5以降: 未着手
+- Phase 5: 賢者っち共通基盤・10体Asset導入 — 完了
+- Phase 6以降: 未着手
 
 ## Phase 3の時間と保存
 
@@ -133,5 +136,6 @@ npm run analyze:worldtchi
 - 夏の庭: 実装・実機確認済み
 - 子供部屋: 実装済み
 - 和室: 実装済み
+- 3ステージともスマートフォン実機確認済み
 
 外部Assetの出典・License・使用モデルは `ASSET_LICENSES.md`、各ステージの構成と計測値は `docs/*-audit.md` を参照してください。

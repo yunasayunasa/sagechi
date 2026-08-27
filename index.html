@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
     <meta name="theme-color" content="#b8dca8" />
-    <title>賢者っち — Phase 4</title>
+    <title>賢者っち — Phase 5</title>
   </head>
   <body>
     <main id="app">
@@ -32,6 +32,8 @@
         <label><input id="show-hit" type="checkbox" /> Hit Area</label>
         <label><input id="show-area" type="checkbox" /> Movement Area</label>
         <label><input id="show-target" type="checkbox" /> Target</label>
+        <label class="preview-label">賢者っち確認<select id="character-preview"></select></label>
+        <div id="sage-reactions" class="reaction-buttons" hidden><button type="button" data-reaction="happy">喜</button><button type="button" data-reaction="lookAround">見回す</button><button type="button" data-reaction="angry">怒</button><button type="button" data-reaction="sad">悲</button><button type="button" data-reaction="cry">泣</button></div>
       </section>
       <div id="fatal-error" class="fatal-error" hidden></div>
     </main>

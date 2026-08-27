@@ -1,8 +1,9 @@
 import * as THREE from 'three';import type { GameConfig } from '../config/game-config';import type { LoadedCharacter } from './CharacterLoader';import type { EffectSystem } from '../effects/EffectSystem';
 import type { CircleObstacle } from '../stages/stage-types';
+import type { CharacterController } from './CharacterController';
 export type FloatingState='idle'|'moving'|'spin'|'tap'|'pet'|'pickup'|'release';
 const random=(min:number,max:number)=>THREE.MathUtils.randFloat(min,max);
-export class FloatingCharacterController {
+export class FloatingCharacterController implements CharacterController {
   state:FloatingState='idle';readonly target=new THREE.Vector3();private idleLeft=0;private interactionLeft=0;private releaseStart=new THREE.Vector3();private releaseProgress=0;private pulseClock=0;private pulseAt=0;private glowClock=0;private glowAt=0;private spinClock=0;private spinAt=0;private spinDuration=0;private spinElapsed=0;private spinAxis:'vertical'|'horizontal'='horizontal';private readonly floatFrequency:number;private elapsed=0;private pickupPoint=new THREE.Vector3();
   constructor(readonly character:LoadedCharacter,private readonly config:GameConfig,private readonly effects:EffectSystem,private obstacles:readonly CircleObstacle[]=[]){this.floatFrequency=random(config.floating.frequencyMin,config.floating.frequencyMax);this.enterIdle();this.schedulePulse();this.scheduleGlow();this.scheduleSpin();}
   setObstacles(obstacles:readonly CircleObstacle[]):void{this.obstacles=obstacles;}

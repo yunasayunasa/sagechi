@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import type { CharacterConfig } from './character-config';
-export interface LoadedCharacter { root: THREE.Group; visualPivot: THREE.Group; model: THREE.Group; hitArea: THREE.Mesh; ownedMaterials: Set<THREE.Material>; ownedTextures: Set<THREE.Texture>; }
+import { withoutRootMotion } from './AnimationController';
+import type { CharacterConfig, SemanticAnimation } from './character-config';
+export interface LoadedCharacter { root: THREE.Group; visualPivot: THREE.Group; model: THREE.Group; hitArea: THREE.Mesh; mixer: THREE.AnimationMixer; clips: ReadonlyMap<SemanticAnimation, THREE.AnimationClip>; ownedMaterials: Set<THREE.Material>; ownedTextures: Set<THREE.Texture>; }
 export class CharacterLoader {
   private readonly loader = new GLTFLoader();
   async load(config: CharacterConfig): Promise<LoadedCharacter> {
@@ -19,10 +20,18 @@ export class CharacterLoader {
     visualPivot.position.y = centerY;
     model.position.set(-(box.min.x + box.max.x) / 2, -box.min.y - centerY, -(box.min.z + box.max.z) / 2);
     const hitArea = new THREE.Mesh(new THREE.SphereGeometry(config.hitRadius, 20, 14), new THREE.MeshBasicMaterial({ color: 0xff7eb6, transparent: true, opacity: 0, depthWrite: false }));
-    hitArea.name = 'worldtchi-hit-area'; hitArea.position.y = config.hitCenterY; root.add(hitArea);
-    return { root, visualPivot, model, hitArea, ownedMaterials, ownedTextures };
+    hitArea.name = `${config.id}-hit-area`; hitArea.position.y = config.hitCenterY; root.add(hitArea);
+    root.position.y = config.groundOffset;
+    const mixer = new THREE.AnimationMixer(root), clips = new Map<SemanticAnimation, THREE.AnimationClip>();
+    for (const [semantic, rawName] of Object.entries(config.animationMap ?? {}) as [SemanticAnimation, string][]) {
+      const source = gltf.animations.find((clip) => clip.name === rawName);
+      if (!source) { console.warn(`[CharacterLoader] ${config.id}: ${semantic} -> ${rawName} が見つかりません`); continue; }
+      clips.set(semantic, semantic === 'walk' ? withoutRootMotion(source) : source.clone());
+    }
+    return { root, visualPivot, model, hitArea, mixer, clips, ownedMaterials, ownedTextures };
   }
   dispose(character: LoadedCharacter): void {
+    character.mixer.stopAllAction(); character.mixer.uncacheRoot(character.root);
     character.root.parent?.remove(character.root); character.root.traverse((node) => { if (node instanceof THREE.Mesh) node.geometry.dispose(); });
     character.ownedMaterials.forEach((m) => m.dispose()); character.ownedTextures.forEach((t) => t.dispose());
   }

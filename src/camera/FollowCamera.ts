@@ -15,13 +15,15 @@ export class FollowCamera {
 
   constructor(
     readonly camera: THREE.PerspectiveCamera,
-    private readonly target: THREE.Object3D,
+    private target: THREE.Object3D,
     private readonly config: GameConfig,
   ) {
     this.overviewOffset = new THREE.Vector3(...config.camera.overviewOffset);
     this.closeOffset = new THREE.Vector3(...config.camera.closeOffset);
     this.currentOffset = this.overviewOffset.clone();
   }
+
+  setTarget(target: THREE.Object3D): void { this.target = target; }
 
   /** 将来の「呼ぶ」演出から使用する近景切替口。 */
   setMode(mode: CameraMode): void {

@@ -3,8 +3,10 @@ import { FollowCamera } from '../camera/FollowCamera';
 import { CareSystem } from '../care/CareSystem';
 import { CareUI } from '../care/CareUI';
 import { CharacterLoader, type LoadedCharacter } from '../characters/CharacterLoader';
-import { WORLDTCCHI_CONFIG } from '../characters/character-config';
+import { SAGE_CHARACTER_CONFIGS, WORLDTCCHI_CONFIG, type CharacterConfig, type SemanticAnimation } from '../characters/character-config';
+import type { CharacterController } from '../characters/CharacterController';
 import { FloatingCharacterController } from '../characters/FloatingCharacterController';
+import { WalkingCharacterController } from '../characters/WalkingCharacterController';
 import { GAME_CONFIG } from '../config/game-config';
 import { DebugHud } from '../debug/DebugHud';
 import { EffectSystem } from '../effects/EffectSystem';
@@ -31,7 +33,8 @@ export class Game {
   private readonly stageLoader = new StageLoader(this.stageAssets);
   private stage: LoadedStage | null = null;
   private character: LoadedCharacter | null = null;
-  private floating: FloatingCharacterController | null = null;
+  private controller: CharacterController | null = null;
+  private activeConfig: CharacterConfig = WORLDTCCHI_CONFIG;
   private followCamera: FollowCamera | null = null;
   private input: InputController | null = null;
   private careUi: CareUI | null = null;
@@ -63,18 +66,14 @@ export class Game {
     this.scene.background = new THREE.Color(initialStage.background);
     this.scene.fog = new THREE.Fog(initialStage.fog.color, initialStage.fog.near, initialStage.fog.far);
     this.scene.add(this.stage.root);
-    const loaded = await this.loader.load(WORLDTCCHI_CONFIG);
-    this.character = loaded;
-    loaded.root.position.y = this.config.floating.baseAltitude;
-    this.scene.add(loaded.root);
-    this.floating = new FloatingCharacterController(loaded, this.config, this.effects, this.stage.obstacles);
+    const loaded = await this.mountCharacter(WORLDTCCHI_CONFIG);
     this.evolution = new EvolutionSystem(this.save, loaded, this.config, () => this.saveService.save(this.save), this.showEvolutionStart, this.showEvolutionComplete);
     document.querySelector<HTMLElement>('#character-name')!.textContent = this.evolution.getCurrentName();
     this.followCamera = new FollowCamera(this.camera, loaded.root, this.config);
-    this.input = new InputController(this.canvas, this.camera, loaded.hitArea, this.floating, this.followCamera, this.config, () => this.care.pet());
+    this.input = new InputController(this.canvas, this.camera, loaded.hitArea, this.controller!, this.followCamera, this.config, () => this.care.pet());
     this.careUi = new CareUI(this.care);
-    this.unsubscribeCareReaction = this.care.subscribe((event) => { if (event.kind === 'reaction' && event.tone === 'happy') this.floating?.pet(); else if (event.kind === 'reaction' && event.tone === 'calm') this.floating?.tap(this.camera.position); });
-    this.debug = new DebugHud(document.querySelector('#debug-hud')!, document.querySelector('#debug-controls')!, this.renderer, this.floating, this.input);
+    this.unsubscribeCareReaction = this.care.subscribe((event) => { if (event.kind === 'reaction' && event.tone === 'happy') this.controller?.pet(); else if (event.kind === 'reaction' && event.tone === 'calm') this.controller?.tap(this.camera.position); });
+    this.debug = new DebugHud(document.querySelector('#debug-hud')!, document.querySelector('#debug-controls')!, this.renderer, this.controller!, this.input);
     this.bindUi();
     this.running = true;
     this.clock.start();
@@ -91,6 +90,7 @@ export class Game {
     this.careUi?.dispose();
     this.unsubscribeCareReaction?.();
     this.input?.dispose();
+    this.controller?.dispose?.();
     this.effects.dispose();
     if (this.character) this.loader.dispose(this.character);
     if (this.stage) this.stageLoader.dispose(this.stage);
@@ -106,12 +106,12 @@ export class Game {
     this.frame = requestAnimationFrame(this.loop);
     if (!this.visible) return;
     const dt = Math.min(this.clock.getDelta(), this.config.timing.maxDeltaSeconds);
-    if (!this.evolution?.active) this.floating?.update(dt);
-    this.evolution?.update(dt);
+    if (!this.evolution?.active) this.controller?.update(dt);
+    if (this.activeConfig.id === 'worldtchi') this.evolution?.update(dt);
     this.followCamera?.update(dt);
     this.care.update(dt);
     this.effects.update(dt);
-    if (this.targetHelper && this.floating) this.targetHelper.position.copy(this.floating.target).setY(.03);
+    if (this.targetHelper && this.controller) this.targetHelper.position.copy(this.controller.target).setY(.03);
     this.debug?.update(dt);
     this.renderer.render(this.scene, this.camera);
   };
@@ -135,6 +135,10 @@ export class Game {
     document.querySelector<HTMLInputElement>('#show-hit')!.onchange = (event) => { if (this.character) (this.character.hitArea.material as THREE.MeshBasicMaterial).opacity = (event.target as HTMLInputElement).checked ? .18 : 0; };
     document.querySelector<HTMLInputElement>('#show-area')!.onchange = (event) => { if (this.areaHelper) this.areaHelper.visible = (event.target as HTMLInputElement).checked; };
     document.querySelector<HTMLInputElement>('#show-target')!.onchange = (event) => { if (this.targetHelper) this.targetHelper.visible = (event.target as HTMLInputElement).checked; };
+    const selector = document.querySelector<HTMLSelectElement>('#character-preview')!;
+    selector.innerHTML = `<option value="worldtchi">ワールドっち（現在の育成個体）</option>${SAGE_CHARACTER_CONFIGS.map((config) => `<option value="${config.id}">${config.label}</option>`).join('')}`;
+    selector.onchange = () => void this.previewCharacter(selector.value);
+    document.querySelectorAll<HTMLButtonElement>('[data-reaction]').forEach((button) => { button.onclick = () => (this.controller as WalkingCharacterController)?.playReaction?.(button.dataset.reaction as SemanticAnimation); });
     document.querySelector<HTMLButtonElement>('#evolution-close')!.onclick = () => { document.querySelector<HTMLElement>('#evolution-overlay')!.hidden = true; };
     const mapPanel = document.querySelector<HTMLElement>('#map-panel')!;
     document.querySelector<HTMLButtonElement>('#map-button')!.onclick = () => { mapPanel.hidden = false; };
@@ -183,7 +187,7 @@ export class Game {
     const loading = document.querySelector<HTMLElement>('#stage-loading')!; loading.hidden = false;
     try {
       const config = STAGES[id], next = await this.stageLoader.load(config); this.scene.add(next.root);
-      if (this.stage) this.stageLoader.dispose(this.stage); this.stage = next; this.floating?.setObstacles(next.obstacles);
+      if (this.stage) this.stageLoader.dispose(this.stage); this.stage = next; this.controller?.setObstacles(next.obstacles);
       this.scene.background = new THREE.Color(config.background); this.scene.fog = new THREE.Fog(config.fog.color, config.fog.near, config.fog.far);
       this.save.map = id; this.saveService.save(this.save); this.updateStageUi(); document.querySelector<HTMLElement>('#map-panel')!.hidden = true;
     } catch (error) { console.error(error); document.querySelector<HTMLElement>('#message')!.textContent = 'お部屋の準備に失敗しました'; }
@@ -192,7 +196,38 @@ export class Game {
 
   private updateStageUi(): void {
     const config = STAGES[this.save.map]; document.querySelector<HTMLElement>('#stage-label')!.textContent = config.label;
-    document.querySelector<HTMLElement>('#phase-label')!.textContent = `PHASE 4 / ${config.id.toUpperCase()}`;
+    document.querySelector<HTMLElement>('#phase-label')!.textContent = `PHASE 5 / ${config.id.toUpperCase()}`;
     document.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach((button) => { button.classList.toggle('active', button.dataset.stage === this.save.map); });
+  }
+
+  private async mountCharacter(config: CharacterConfig): Promise<LoadedCharacter> {
+    const loaded = await this.loader.load(config);
+    this.character = loaded; this.activeConfig = config;
+    if (config.controller === 'floating') loaded.root.position.y = this.config.floating.baseAltitude;
+    this.scene.add(loaded.root);
+    this.controller = config.controller === 'walking'
+      ? new WalkingCharacterController(loaded, config, this.config, this.effects, this.stage?.obstacles)
+      : new FloatingCharacterController(loaded, this.config, this.effects, this.stage?.obstacles);
+    return loaded;
+  }
+
+  private async previewCharacter(id: string): Promise<void> {
+    const config = id === 'worldtchi' ? WORLDTCCHI_CONFIG : SAGE_CHARACTER_CONFIGS.find((item) => item.id === id);
+    if (!config || config.id === this.activeConfig.id) return;
+    const loading = document.querySelector<HTMLElement>('#stage-loading')!; loading.textContent = `${config.label}を呼んでいます…`; loading.hidden = false;
+    try {
+      const previous = this.character, previousController = this.controller, previousInput = this.input;
+      const loaded = await this.mountCharacter(config);
+      previousInput?.dispose(); previousController?.dispose?.();
+      if (previous) this.loader.dispose(previous);
+      this.followCamera?.setTarget(loaded.root);
+      this.input = new InputController(this.canvas, this.camera, loaded.hitArea, this.controller!, this.followCamera!, this.config, () => { if (config.id === 'worldtchi') this.care.pet(); });
+      this.debug?.setSources(this.controller!, this.input);
+      if (config.id === 'worldtchi') this.evolution = new EvolutionSystem(this.save, loaded, this.config, () => this.saveService.save(this.save), this.showEvolutionStart, this.showEvolutionComplete);
+      document.querySelector<HTMLElement>('#character-name')!.textContent = config.id === 'worldtchi' ? this.evolution!.getCurrentName() : config.label;
+      document.querySelector<HTMLElement>('#message')!.textContent = config.id === 'worldtchi' ? '画面のこの子に触れてみてね' : 'Phase 5 確認中：育成結果には影響しません';
+      document.querySelector<HTMLElement>('#sage-reactions')!.hidden = config.controller !== 'walking';
+    } catch (error) { console.error(error); document.querySelector<HTMLElement>('#message')!.textContent = `${config.label}を呼べませんでした`; }
+    finally { loading.hidden = true; loading.textContent = 'お部屋を準備しています…'; }
   }
 }
