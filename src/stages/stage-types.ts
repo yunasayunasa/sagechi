@@ -13,7 +13,7 @@ export interface StagePlacement {
 }
 export interface StageGeometryItem {
   id: string;
-  kind: 'ground' | 'fence' | 'pool' | 'toy-ball';
+  kind: 'ground' | 'fence' | 'pool' | 'toy-ball' | 'kids-room-shell' | 'kids-rug' | 'rattle' | 'japanese-room-shell' | 'low-table' | 'cushion' | 'vase';
   position: readonly [number, number, number];
   rotationY?: number;
   scale?: number;
@@ -34,4 +34,6 @@ export interface LoadedStage {
   root: THREE.Group;
   obstacles: readonly CircleObstacle[];
   interestPoints: readonly THREE.Object3D[];
+  ownedGeometries: Set<THREE.BufferGeometry>;
+  ownedMaterials: Set<THREE.Material>;
 }

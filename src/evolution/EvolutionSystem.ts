@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { LoadedCharacter } from '../characters/CharacterLoader';
 import type { GameConfig } from '../config/game-config';
-import type { GameSaveV4, WorldtchiForm } from '../save/SaveService';
+import type { GameSaveV5, WorldtchiForm } from '../save/SaveService';
 
 type ToonSnapshot = { material: THREE.MeshToonMaterial; color: THREE.Color; emissive: THREE.Color };
 
@@ -18,7 +18,7 @@ export class EvolutionSystem {
   private readonly materials: ToonSnapshot[] = [];
 
   constructor(
-    private readonly save: GameSaveV4,
+    private readonly save: GameSaveV5,
     private readonly character: LoadedCharacter,
     private readonly config: GameConfig,
     private readonly persist: () => void,

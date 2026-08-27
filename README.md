@@ -2,7 +2,7 @@
 
 スマートフォン向け3D育成ゲーム「賢者っち」の本番プロジェクトです。現在は **Phase 1〜Phase 4** を実装しています。本物のワールドっちGLBがのんびり生活し、直接操作とお世話の傾向によって白／黒ワールドっちへ進化します。
 
-背景制作は別途段階導入中です。現在はCC0 AssetとThree.js Geometryで構成した **夏の庭** まで完成しています。子供部屋・和室は、夏の庭のスマートフォン実機確認後に追加します。
+背景はCC0 AssetとThree.js Geometryを組み合わせた **夏の庭・子供部屋・和室** の3ステージを実装しています。下部のマップボタンから切り替えられ、選択したステージは端末に保存されます。
 
 ## 使用技術
 
@@ -98,8 +98,9 @@ npm run analyze:worldtchi
 - `evolution/EvolutionSystem`: 白黒の総合判定、Toon外観差分、進化演出・復元
 - `stages/StageAssetManager`: GLB Cache、共有Resource、Toon変換
 - `stages/StageLoader`: Stage ConfigからAsset・Geometry・Interest Pointを構築
-- `stages/garden-stage`: 夏の庭の配置、軽量Collision、Interest Metadata
-- `save/SaveService`: 育成・進化データ、schema version、V1/V2→V3 Migration
+- `stages/*-stage`: 3ステージの配置、軽量Collision、Interest Metadata
+- `stages/stage-registry`: ステージ切替用のConfig登録
+- `save/SaveService`: 育成・進化・現在ステージ、schema version、V1〜V4→V5 Migration
 - `debug/DebugHud`: 開発情報と可視化
 
 ## 現在実装Phase
@@ -129,8 +130,8 @@ npm run analyze:worldtchi
 
 ## 背景進行状況
 
-- 夏の庭: 実装済み（実機確認待ち）
-- 子供部屋: 未着手
-- 和室: 未着手
+- 夏の庭: 実装・実機確認済み
+- 子供部屋: 実装済み
+- 和室: 実装済み
 
-外部Assetの出典・License・使用モデル・Audit値は `ASSET_LICENSES.md`、夏の庭の構成と概算は `docs/summer-garden-audit.md` を参照してください。
+外部Assetの出典・License・使用モデルは `ASSET_LICENSES.md`、各ステージの構成と計測値は `docs/*-audit.md` を参照してください。

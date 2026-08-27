@@ -11,10 +11,10 @@ import { EffectSystem } from '../effects/EffectSystem';
 import { EvolutionSystem } from '../evolution/EvolutionSystem';
 import { InputController } from '../input/InputController';
 import { SaveService } from '../save/SaveService';
-import { SUMMER_GARDEN_STAGE } from '../stages/garden-stage';
 import { StageAssetManager } from '../stages/StageAssetManager';
 import { StageLoader } from '../stages/StageLoader';
-import type { LoadedStage } from '../stages/stage-types';
+import { STAGES } from '../stages/stage-registry';
+import type { LoadedStage, StageId } from '../stages/stage-types';
 
 export class Game {
   private readonly config = GAME_CONFIG;
@@ -43,6 +43,7 @@ export class Game {
   private visible = !document.hidden;
   private areaHelper: THREE.LineLoop | null = null;
   private targetHelper: THREE.Mesh | null = null;
+  private switchingStage = false;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: this.config.renderer.antialias, powerPreference: 'high-performance' });
@@ -57,9 +58,10 @@ export class Game {
   }
 
   async start(): Promise<void> {
-    this.stage = await this.stageLoader.load(SUMMER_GARDEN_STAGE);
-    this.scene.background = new THREE.Color(SUMMER_GARDEN_STAGE.background);
-    this.scene.fog = new THREE.Fog(SUMMER_GARDEN_STAGE.fog.color, SUMMER_GARDEN_STAGE.fog.near, SUMMER_GARDEN_STAGE.fog.far);
+    const initialStage = STAGES[this.save.map];
+    this.stage = await this.stageLoader.load(initialStage);
+    this.scene.background = new THREE.Color(initialStage.background);
+    this.scene.fog = new THREE.Fog(initialStage.fog.color, initialStage.fog.near, initialStage.fog.far);
     this.scene.add(this.stage.root);
     const loaded = await this.loader.load(WORLDTCCHI_CONFIG);
     this.character = loaded;
@@ -134,6 +136,11 @@ export class Game {
     document.querySelector<HTMLInputElement>('#show-area')!.onchange = (event) => { if (this.areaHelper) this.areaHelper.visible = (event.target as HTMLInputElement).checked; };
     document.querySelector<HTMLInputElement>('#show-target')!.onchange = (event) => { if (this.targetHelper) this.targetHelper.visible = (event.target as HTMLInputElement).checked; };
     document.querySelector<HTMLButtonElement>('#evolution-close')!.onclick = () => { document.querySelector<HTMLElement>('#evolution-overlay')!.hidden = true; };
+    const mapPanel = document.querySelector<HTMLElement>('#map-panel')!;
+    document.querySelector<HTMLButtonElement>('#map-button')!.onclick = () => { mapPanel.hidden = false; };
+    document.querySelector<HTMLButtonElement>('#map-close')!.onclick = () => { mapPanel.hidden = true; };
+    mapPanel.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach((stageButton) => { stageButton.onclick = () => void this.switchStage(stageButton.dataset.stage as StageId); });
+    this.updateStageUi();
     addEventListener('resize', this.resize);
     visualViewport?.addEventListener('resize', this.resize);
     document.addEventListener('visibilitychange', this.visibility);
@@ -169,4 +176,23 @@ export class Game {
     overlay.querySelector<HTMLButtonElement>('button')!.hidden = false;
     this.effects.sparkle(this.character!.root.position.clone().add(new THREE.Vector3(0, 2, 0)));
   };
+
+  private async switchStage(id: StageId): Promise<void> {
+    if (this.switchingStage || id === this.save.map) { document.querySelector<HTMLElement>('#map-panel')!.hidden = true; return; }
+    this.switchingStage = true;
+    const loading = document.querySelector<HTMLElement>('#stage-loading')!; loading.hidden = false;
+    try {
+      const config = STAGES[id], next = await this.stageLoader.load(config); this.scene.add(next.root);
+      if (this.stage) this.stageLoader.dispose(this.stage); this.stage = next; this.floating?.setObstacles(next.obstacles);
+      this.scene.background = new THREE.Color(config.background); this.scene.fog = new THREE.Fog(config.fog.color, config.fog.near, config.fog.far);
+      this.save.map = id; this.saveService.save(this.save); this.updateStageUi(); document.querySelector<HTMLElement>('#map-panel')!.hidden = true;
+    } catch (error) { console.error(error); document.querySelector<HTMLElement>('#message')!.textContent = 'お部屋の準備に失敗しました'; }
+    finally { loading.hidden = true; this.switchingStage = false; }
+  }
+
+  private updateStageUi(): void {
+    const config = STAGES[this.save.map]; document.querySelector<HTMLElement>('#stage-label')!.textContent = config.label;
+    document.querySelector<HTMLElement>('#phase-label')!.textContent = `PHASE 4 / ${config.id.toUpperCase()}`;
+    document.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach((button) => { button.classList.toggle('active', button.dataset.stage === this.save.map); });
+  }
 }

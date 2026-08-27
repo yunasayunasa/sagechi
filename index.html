@@ -9,7 +9,7 @@
   <body>
     <main id="app">
       <canvas id="game-canvas" aria-label="ワールドっちが暮らす3D空間"></canvas>
-      <header class="title-card"><small>PHASE 4 / SUMMER GARDEN</small><h1 id="character-name">ワールドっち</h1></header>
+      <header class="title-card"><small id="phase-label">PHASE 4 / SUMMER GARDEN</small><h1 id="character-name">ワールドっち</h1></header>
       <section class="status-card" aria-label="ワールドっちの状態">
         <div data-status="hunger"><span>🍽️ 空腹</span><i><b class="status-fill"></b></i></div>
         <div data-status="sleepiness"><span>💤 眠気</span><i><b class="status-fill"></b></i></div>
@@ -21,8 +21,10 @@
       <div id="loading" role="status"><span class="loader-orb"></span><b>ワールドっちを呼んでいます</b></div>
       <div id="message" class="message" aria-live="polite">画面のこの子に触れてみてね</div>
       <aside id="request-bubble" class="request-bubble" hidden><span class="request-icon"></span><span class="request-text"></span><button id="request-open" type="button">応える</button></aside>
-      <nav class="bottom-nav"><button id="care-button" type="button"><span>🤲</span>お世話</button><button type="button" disabled><span>🌻</span>夏の庭</button><button type="button" disabled><span>📖</span>図鑑</button></nav>
+      <nav class="bottom-nav"><button id="care-button" type="button"><span>🤲</span>お世話</button><button id="map-button" type="button"><span>🏡</span><b id="stage-label">夏の庭</b></button><button type="button" disabled><span>📖</span>図鑑</button></nav>
       <section id="care-panel" class="care-panel" hidden><header><h2>お世話</h2><button id="care-close" type="button" aria-label="閉じる">×</button></header><div class="care-options"></div></section>
+      <section id="map-panel" class="care-panel map-panel" hidden><header><h2>どこで過ごす？</h2><button id="map-close" type="button" aria-label="閉じる">×</button></header><div class="map-options"><button type="button" data-stage="summer-garden"><span>🌻</span>夏の庭</button><button type="button" data-stage="kids-room"><span>🧸</span>子供部屋</button><button type="button" data-stage="japanese-room"><span>🍵</span>和室</button></div></section>
+      <div id="stage-loading" class="stage-loading" hidden>お部屋を準備しています…</div>
       <section id="evolution-overlay" class="evolution-overlay" hidden aria-live="assertive"><div class="evolution-aura">✦</div><p>ワールドっちの様子が……</p><h2>進化の気配</h2><button id="evolution-close" type="button" hidden>これからもよろしく</button></section>
       <button id="debug-button" class="debug-button" type="button" aria-label="デバッグ表示を切り替える">DEV</button>
       <aside id="debug-hud" class="debug-hud" hidden></aside>
