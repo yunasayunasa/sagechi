@@ -24,7 +24,7 @@ export const GAME_CONFIG = Object.freeze({
   pulse: { minInterval: 5.5, maxInterval: 10.5, duration: 1.4, amount: 0.035 },
   glow: { minInterval: 7, maxInterval: 14, duration: 1.2, maxIntensity: 0.38 },
   spin: {
-    minInterval: 10, maxInterval: 19,
+    minInterval: 6, maxInterval: 12,
     durationMin: 0.68, durationMax: 0.9,
     verticalChance: 0.5,
   },
