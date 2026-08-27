@@ -46,7 +46,7 @@ npm run analyze:worldtchi
 `src/config/game-config.ts` で次を調整できます。
 
 - PixelRatio上限（初期値1.5）と最大delta（0.05秒）
-- Camera追跡、見回し範囲、自動復帰
+- Cameraの通常俯瞰／呼び寄せ用近景、追跡量、見回し範囲、自動復帰
 - 移動速度・範囲、Idle時間
 - Floating / Pulse / Glow / Reaction
 - Tap / Pet / PickUp / CameraのGesture閾値
@@ -63,6 +63,8 @@ npm run analyze:worldtchi
 - Character長押し: PickUp開始、そのままDrag
 - Background Swipe: 制限付きCamera見回し
 - Release: 浮遊高度へ戻り、Idle後に自律生活へ復帰
+
+通常時はステージ内で暮らす様子が見える俯瞰距離です。将来の「呼ぶ」操作では、`FollowCamera.setMode('close')` を使って従来相当の近景へ滑らかに切り替えられます（呼ぶUI自体はPhase 3以降）。
 
 ## スマートフォン確認
 

@@ -2,10 +2,14 @@ export const GAME_CONFIG = Object.freeze({
   renderer: { pixelRatioCap: 1.5, antialias: true, clearColor: 0xb8dca8 },
   timing: { maxDeltaSeconds: 0.05 },
   camera: {
-    fov: 38, near: 0.01, far: 60, baseOffset: [0, 1.9, 5.7] as const,
+    fov: 40, near: 0.01, far: 60,
+    overviewOffset: [0, 2.45, 7.4] as const,
+    closeOffset: [0, 1.9, 5.7] as const,
+    overviewFollowFactor: 0.35,
     lookAtHeight: 0.85, yawLimit: 0.55, pitchLimit: 0.22,
     swipeSensitivityX: 0.0055, swipeSensitivityY: 0.0035,
     returnDelaySeconds: 2.6, returnDamping: 0.7, followDamping: 4.5,
+    modeTransitionDamping: 2.2,
   },
   movement: {
     halfWidth: 2.35, halfDepth: 1.45, speed: 0.38, arrivalDistance: 0.08,
