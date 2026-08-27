@@ -1,0 +1,16 @@
+{
+  "name": "sagechi-production",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "preview": "vite preview --host 0.0.0.0",
+    "build": "tsc -b && vite build && node scripts/prepare-sites.mjs",
+    "typecheck": "tsc -b --pretty false",
+    "analyze:worldtchi": "node scripts/analyze-glb.mjs public/models/worldtchi.glb",
+    "verify": "npm run typecheck && npm run build && npm run analyze:worldtchi"
+  },
+  "dependencies": { "three": "^0.180.0" },
+  "devDependencies": { "@openai/sites-vite-plugin": "0.2.0", "@types/three": "^0.180.0", "typescript": "^5.9.2", "vite": "^8.0.0" }
+}

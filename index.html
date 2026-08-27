@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#b8dca8" />
+    <title>賢者っち — Phase 1 / 2</title>
+  </head>
+  <body>
+    <main id="app">
+      <canvas id="game-canvas" aria-label="ワールドっちが暮らす3D空間"></canvas>
+      <header class="title-card"><small>SAGECHI / PHASE 1–2</small><h1>ワールドっち</h1><p>ふわり、のんびり。</p></header>
+      <div id="loading" role="status"><span class="loader-orb"></span><b>ワールドっちを呼んでいます</b></div>
+      <div id="message" class="message" aria-live="polite">画面のこの子に触れてみてね</div>
+      <button id="debug-button" class="debug-button" type="button" aria-label="デバッグ表示を切り替える">DEV</button>
+      <aside id="debug-hud" class="debug-hud" hidden></aside>
+      <section id="debug-controls" class="debug-controls" hidden>
+        <label><input id="show-hit" type="checkbox" /> Hit Area</label>
+        <label><input id="show-area" type="checkbox" /> Movement Area</label>
+        <label><input id="show-target" type="checkbox" /> Target</label>
+      </section>
+      <div id="fatal-error" class="fatal-error" hidden></div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
