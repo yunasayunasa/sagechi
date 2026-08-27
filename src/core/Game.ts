@@ -8,6 +8,7 @@ import { FloatingCharacterController } from '../characters/FloatingCharacterCont
 import { GAME_CONFIG } from '../config/game-config';
 import { DebugHud } from '../debug/DebugHud';
 import { EffectSystem } from '../effects/EffectSystem';
+import { EvolutionSystem } from '../evolution/EvolutionSystem';
 import { InputController } from '../input/InputController';
 import { SaveService } from '../save/SaveService';
 
@@ -27,6 +28,7 @@ export class Game {
   private followCamera: FollowCamera | null = null;
   private input: InputController | null = null;
   private careUi: CareUI | null = null;
+  private evolution: EvolutionSystem | null = null;
   private unsubscribeCareReaction: (() => void) | null = null;
   private debug: DebugHud | null = null;
   private frame = 0;
@@ -53,6 +55,8 @@ export class Game {
     loaded.root.position.y = this.config.floating.baseAltitude;
     this.scene.add(loaded.root);
     this.floating = new FloatingCharacterController(loaded, this.config, this.effects);
+    this.evolution = new EvolutionSystem(this.save, loaded, this.config, () => this.saveService.save(this.save), this.showEvolutionStart, this.showEvolutionComplete);
+    document.querySelector<HTMLElement>('#character-name')!.textContent = this.evolution.getCurrentName();
     this.followCamera = new FollowCamera(this.camera, loaded.root, this.config);
     this.input = new InputController(this.canvas, this.camera, loaded.hitArea, this.floating, this.followCamera, this.config, () => this.care.pet());
     this.careUi = new CareUI(this.care);
@@ -87,7 +91,8 @@ export class Game {
     this.frame = requestAnimationFrame(this.loop);
     if (!this.visible) return;
     const dt = Math.min(this.clock.getDelta(), this.config.timing.maxDeltaSeconds);
-    this.floating?.update(dt);
+    if (!this.evolution?.active) this.floating?.update(dt);
+    this.evolution?.update(dt);
     this.followCamera?.update(dt);
     this.care.update(dt);
     this.effects.update(dt);
@@ -119,6 +124,7 @@ export class Game {
     document.querySelector<HTMLInputElement>('#show-hit')!.onchange = (event) => { if (this.character) (this.character.hitArea.material as THREE.MeshBasicMaterial).opacity = (event.target as HTMLInputElement).checked ? .18 : 0; };
     document.querySelector<HTMLInputElement>('#show-area')!.onchange = (event) => { if (this.areaHelper) this.areaHelper.visible = (event.target as HTMLInputElement).checked; };
     document.querySelector<HTMLInputElement>('#show-target')!.onchange = (event) => { if (this.targetHelper) this.targetHelper.visible = (event.target as HTMLInputElement).checked; };
+    document.querySelector<HTMLButtonElement>('#evolution-close')!.onclick = () => { document.querySelector<HTMLElement>('#evolution-overlay')!.hidden = true; };
     addEventListener('resize', this.resize);
     visualViewport?.addEventListener('resize', this.resize);
     document.addEventListener('visibilitychange', this.visibility);
@@ -136,5 +142,22 @@ export class Game {
     this.visible = !document.hidden;
     if (this.visible) { this.clock.stop(); this.clock.start(); this.clock.getDelta(); }
     else { this.saveService.save(this.save); this.clock.stop(); }
+  };
+
+  private showEvolutionStart = (): void => {
+    const overlay = document.querySelector<HTMLElement>('#evolution-overlay')!;
+    overlay.hidden = false;
+    overlay.querySelector('p')!.textContent = 'ワールドっちの様子が……';
+    overlay.querySelector('h2')!.textContent = '進化の気配';
+    overlay.querySelector<HTMLButtonElement>('button')!.hidden = true;
+  };
+
+  private showEvolutionComplete = (_form: string, name: string): void => {
+    document.querySelector<HTMLElement>('#character-name')!.textContent = name;
+    const overlay = document.querySelector<HTMLElement>('#evolution-overlay')!;
+    overlay.querySelector('p')!.textContent = '育て方が新しい個性になった！';
+    overlay.querySelector('h2')!.textContent = `${name} に進化した`;
+    overlay.querySelector<HTMLButtonElement>('button')!.hidden = false;
+    this.effects.sparkle(this.character!.root.position.clone().add(new THREE.Vector3(0, 2, 0)));
   };
 }

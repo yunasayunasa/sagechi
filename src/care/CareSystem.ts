@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { GameConfig } from '../config/game-config';
-import type { GameSaveV2 } from '../save/SaveService';
+import type { GameSaveV3 } from '../save/SaveService';
 import type { FoodChoice, PlayChoice, RequestType } from './care-types';
 
 export type CareEvent = { kind: 'status' } | { kind: 'request'; request: RequestType | null } | { kind: 'reaction'; tone: 'happy' | 'calm' | 'delayed'; message: string };
@@ -16,7 +16,7 @@ export class CareSystem {
   private statusUiClock = 0;
   private readonly listeners = new Set<(event: CareEvent) => void>();
 
-  constructor(readonly save: GameSaveV2, private readonly config: GameConfig, private readonly persist: () => void) {
+  constructor(readonly save: GameSaveV3, private readonly config: GameConfig, private readonly persist: () => void) {
     this.scheduleRequest();
   }
 
@@ -120,8 +120,8 @@ export class CareSystem {
     this.emit({ kind: 'reaction', tone, message });
   }
 
-  private adjust(values: Partial<Record<keyof GameSaveV2['status'], number>>): void {
-    for (const key of Object.keys(values) as Array<keyof GameSaveV2['status']>) this.save.status[key] = clamp(this.save.status[key] + (values[key] ?? 0));
+  private adjust(values: Partial<Record<keyof GameSaveV3['status'], number>>): void {
+    for (const key of Object.keys(values) as Array<keyof GameSaveV3['status']>) this.save.status[key] = clamp(this.save.status[key] + (values[key] ?? 0));
     this.emit({ kind: 'status' });
   }
 

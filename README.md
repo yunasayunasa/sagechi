@@ -1,6 +1,6 @@
 # 賢者っち
 
-スマートフォン向け3D育成ゲーム「賢者っち」の本番プロジェクトです。現在は **Phase 1〜Phase 3** を実装しています。本物のワールドっちGLBがのんびり生活し、直接操作に加えて、ステータス・オネダリ・食事・遊びによる育成ができます。
+スマートフォン向け3D育成ゲーム「賢者っち」の本番プロジェクトです。現在は **Phase 1〜Phase 4** を実装しています。本物のワールドっちGLBがのんびり生活し、直接操作とお世話の傾向によって白／黒ワールドっちへ進化します。
 
 ## 使用技術
 
@@ -51,6 +51,7 @@ npm run analyze:worldtchi
 - Floating / Pulse / Glow / Reaction
 - Tap / Pet / PickUp / CameraのGesture閾値
 - ステータス変化速度、オネダリ間隔・判定閾値、育成効果
+- 白黒進化の必要お世話回数、Calm／Active判定Weight、演出時間、進化後Scale
 - Save key / schema version / Debug初期値
 
 ## Debug Mode
@@ -92,7 +93,8 @@ npm run analyze:worldtchi
 - `effects/EffectSystem`: 差し替え可能なHeart / Sparkle
 - `care/CareSystem`: ステータス時間進行、オネダリ、育成効果・履歴
 - `care/CareUI`: ステータスゲージ、お世話メニュー、オネダリ表示
-- `save/SaveService`: Phase 3データ、schema version、V1→V2 Migration
+- `evolution/EvolutionSystem`: 白黒の総合判定、Toon外観差分、進化演出・復元
+- `save/SaveService`: 育成・進化データ、schema version、V1/V2→V3 Migration
 - `debug/DebugHud`: 開発情報と可視化
 
 ## 現在実装Phase
@@ -100,7 +102,8 @@ npm run analyze:worldtchi
 - Phase 1: 本番ゲーム基盤 — 完了
 - Phase 2: ワールドっち — 完了
 - Phase 3: 育成 — 完了
-- Phase 4以降: 未着手
+- Phase 4: 白黒進化 — 完了
+- Phase 5以降: 未着手
 
 ## Phase 3の時間と保存
 
@@ -108,4 +111,13 @@ npm run analyze:worldtchi
 - `visibilitychange` でバックグラウンド中のSimulationを停止
 - 復帰時に巨大deltaや閉じていた時間を反映しない
 - ステータス、育成履歴、対応回数、設定をLocalStorageへ定期保存
+- 現在の進化段階と白／黒形態を保存し、再起動時は演出なしで復元
 - ブラウザデータ削除時の消失は仕様として許容
+
+## Phase 4の白黒進化
+
+- 初期調整値はお世話3回（Configから変更可能）
+- Calm、Affection、Healthy、Book等と、Active、Ball、Delay、Stress等を重み付きで総合判定
+- 白は明るいEmissive、黒は暗いToon Colorとして同じ本番GLBへランタイム適用
+- 両形態とも約8%大きく表示し、元GLBは変更しない
+- 白＝善、黒＝悪ではなく、穏やか／活発の育成個性として扱う
