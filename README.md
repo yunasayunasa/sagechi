@@ -47,7 +47,7 @@ npm run analyze:worldtchi
 
 - PixelRatio上限（初期値1.5）と最大delta（0.05秒）
 - Cameraの通常俯瞰／呼び寄せ用近景、追跡量、見回し範囲、自動復帰
-- 移動速度・範囲、Idle時間
+- 移動速度・範囲、Idle時間、縦／横スピンの頻度と速度
 - Floating / Pulse / Glow / Reaction
 - Tap / Pet / PickUp / CameraのGesture閾値
 - Save key / schema version / Debug初期値

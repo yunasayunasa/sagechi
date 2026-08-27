@@ -3,7 +3,7 @@ export const GAME_CONFIG = Object.freeze({
   timing: { maxDeltaSeconds: 0.05 },
   camera: {
     fov: 40, near: 0.01, far: 60,
-    overviewOffset: [0, 2.45, 7.4] as const,
+    overviewOffset: [0, 2.65, 8.15] as const,
     closeOffset: [0, 1.9, 5.7] as const,
     overviewFollowFactor: 0.35,
     lookAtHeight: 0.85, yawLimit: 0.55, pitchLimit: 0.22,
@@ -23,6 +23,11 @@ export const GAME_CONFIG = Object.freeze({
   },
   pulse: { minInterval: 5.5, maxInterval: 10.5, duration: 1.4, amount: 0.035 },
   glow: { minInterval: 7, maxInterval: 14, duration: 1.2, maxIntensity: 0.38 },
+  spin: {
+    minInterval: 10, maxInterval: 19,
+    durationMin: 0.68, durationMax: 0.9,
+    verticalChance: 0.5,
+  },
   reaction: { tapDuration: 1.15, petDuration: 1.35, pickupReleaseDuration: 0.8, bounceHeight: 0.16 },
   gesture: {
     tapMaxDistancePx: 12, petStartDistancePx: 18, pickupHoldMs: 430,
