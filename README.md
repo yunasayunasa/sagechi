@@ -1,6 +1,6 @@
 # 賢者っち
 
-スマートフォン向け3D育成ゲーム「賢者っち」の本番プロジェクトです。現在は **Phase 1 / Phase 2** のみを実装しています。本物のワールドっちGLBが、のんびり浮遊・自律移動し、Tap / Pet / PickUpへ反応します。育成機能はまだありません。
+スマートフォン向け3D育成ゲーム「賢者っち」の本番プロジェクトです。現在は **Phase 1〜Phase 3** を実装しています。本物のワールドっちGLBがのんびり生活し、直接操作に加えて、ステータス・オネダリ・食事・遊びによる育成ができます。
 
 ## 使用技術
 
@@ -50,6 +50,7 @@ npm run analyze:worldtchi
 - 移動速度・範囲、Idle時間、縦／横スピンの頻度と速度
 - Floating / Pulse / Glow / Reaction
 - Tap / Pet / PickUp / CameraのGesture閾値
+- ステータス変化速度、オネダリ間隔・判定閾値、育成効果
 - Save key / schema version / Debug初期値
 
 ## Debug Mode
@@ -63,6 +64,8 @@ npm run analyze:worldtchi
 - Character長押し: PickUp開始、そのままDrag
 - Background Swipe: 制限付きCamera見回し
 - Release: 浮遊高度へ戻り、Idle後に自律生活へ復帰
+- お世話: 食事（野菜・甘いもの・肉）、遊び（ボール・ガラガラ・絵本）、休む
+- オネダリ: 「応える」から適切なお世話、または「あとでね」
 
 通常時はステージ内で暮らす様子が見える俯瞰距離です。将来の「呼ぶ」操作では、`FollowCamera.setMode('close')` を使って従来相当の近景へ滑らかに切り替えられます（呼ぶUI自体はPhase 3以降）。
 
@@ -87,11 +90,22 @@ npm run analyze:worldtchi
 - `input/InputController`: Pointer EventとGesture優先順位
 - `camera/FollowCamera`: 追跡、制限付きSwipe、自動復帰
 - `effects/EffectSystem`: 差し替え可能なHeart / Sparkle
-- `save/SaveService`: schema versionとMigration入口
+- `care/CareSystem`: ステータス時間進行、オネダリ、育成効果・履歴
+- `care/CareUI`: ステータスゲージ、お世話メニュー、オネダリ表示
+- `save/SaveService`: Phase 3データ、schema version、V1→V2 Migration
 - `debug/DebugHud`: 開発情報と可視化
 
 ## 現在実装Phase
 
 - Phase 1: 本番ゲーム基盤 — 完了
 - Phase 2: ワールドっち — 完了
-- Phase 3以降: 未着手
+- Phase 3: 育成 — 完了
+- Phase 4以降: 未着手
+
+## Phase 3の時間と保存
+
+- ステータスとオネダリの時間は、ページがフォアグラウンドの間だけ進行
+- `visibilitychange` でバックグラウンド中のSimulationを停止
+- 復帰時に巨大deltaや閉じていた時間を反映しない
+- ステータス、育成履歴、対応回数、設定をLocalStorageへ定期保存
+- ブラウザデータ削除時の消失は仕様として許容

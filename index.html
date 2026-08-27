@@ -4,14 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
     <meta name="theme-color" content="#b8dca8" />
-    <title>賢者っち — Phase 1 / 2</title>
+    <title>賢者っち — Phase 3</title>
   </head>
   <body>
     <main id="app">
       <canvas id="game-canvas" aria-label="ワールドっちが暮らす3D空間"></canvas>
-      <header class="title-card"><small>SAGECHI / PHASE 1–2</small><h1>ワールドっち</h1><p>ふわり、のんびり。</p></header>
+      <header class="title-card"><small>SAGECHI / PHASE 3</small><h1>ワールドっち</h1></header>
+      <section class="status-card" aria-label="ワールドっちの状態">
+        <div data-status="hunger"><span>🍽️ 空腹</span><i><b class="status-fill"></b></i></div>
+        <div data-status="sleepiness"><span>💤 眠気</span><i><b class="status-fill"></b></i></div>
+        <div data-status="boredom"><span>🧸 退屈</span><i><b class="status-fill"></b></i></div>
+        <div data-status="mood" class="good"><span>💗 機嫌</span><i><b class="status-fill"></b></i></div>
+        <div data-status="stress"><span>💭 ストレス</span><i><b class="status-fill"></b></i></div>
+        <div data-status="health" class="good"><span>🌿 健康</span><i><b class="status-fill"></b></i></div>
+      </section>
       <div id="loading" role="status"><span class="loader-orb"></span><b>ワールドっちを呼んでいます</b></div>
       <div id="message" class="message" aria-live="polite">画面のこの子に触れてみてね</div>
+      <aside id="request-bubble" class="request-bubble" hidden><span class="request-icon"></span><span class="request-text"></span><button id="request-open" type="button">応える</button></aside>
+      <nav class="bottom-nav"><button id="care-button" type="button"><span>🤲</span>お世話</button><button type="button" disabled><span>🗺️</span>マップ</button><button type="button" disabled><span>📖</span>図鑑</button></nav>
+      <section id="care-panel" class="care-panel" hidden><header><h2>お世話</h2><button id="care-close" type="button" aria-label="閉じる">×</button></header><div class="care-options"></div></section>
       <button id="debug-button" class="debug-button" type="button" aria-label="デバッグ表示を切り替える">DEV</button>
       <aside id="debug-hud" class="debug-hud" hidden></aside>
       <section id="debug-controls" class="debug-controls" hidden>

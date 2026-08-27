@@ -33,7 +33,12 @@ export const GAME_CONFIG = Object.freeze({
     tapMaxDistancePx: 12, petStartDistancePx: 18, pickupHoldMs: 430,
     pickupDragStartDistancePx: 8, cameraStartDistancePx: 8,
   },
-  save: { key: 'sagechi.phase12.save', schemaVersion: 1 },
+  care: {
+    statusPerMinute: { hunger: 4.2, sleepiness: 2.8, boredom: 4.8, mood: -1.2, stress: 0.45, health: -0.15 },
+    requestMinSeconds: 18, requestMaxSeconds: 32, requestNeedThreshold: 48,
+    saveIntervalSeconds: 5,
+  },
+  save: { key: 'sagechi.phase12.save', schemaVersion: 2 },
   debug: { enabledByDefault: false },
 });
 export type GameConfig = typeof GAME_CONFIG;
