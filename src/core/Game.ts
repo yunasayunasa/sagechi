@@ -11,6 +11,10 @@ import { EffectSystem } from '../effects/EffectSystem';
 import { EvolutionSystem } from '../evolution/EvolutionSystem';
 import { InputController } from '../input/InputController';
 import { SaveService } from '../save/SaveService';
+import { SUMMER_GARDEN_STAGE } from '../stages/garden-stage';
+import { StageAssetManager } from '../stages/StageAssetManager';
+import { StageLoader } from '../stages/StageLoader';
+import type { LoadedStage } from '../stages/stage-types';
 
 export class Game {
   private readonly config = GAME_CONFIG;
@@ -23,6 +27,9 @@ export class Game {
   private readonly saveService = new SaveService(GAME_CONFIG.save.key);
   private readonly save = this.saveService.load();
   private readonly care = new CareSystem(this.save, GAME_CONFIG, () => this.saveService.save(this.save));
+  private readonly stageAssets = new StageAssetManager();
+  private readonly stageLoader = new StageLoader(this.stageAssets);
+  private stage: LoadedStage | null = null;
   private character: LoadedCharacter | null = null;
   private floating: FloatingCharacterController | null = null;
   private followCamera: FollowCamera | null = null;
@@ -44,17 +51,21 @@ export class Game {
     this.camera = new THREE.PerspectiveCamera(this.config.camera.fov, 1, this.config.camera.near, this.config.camera.far);
     this.camera.position.set(...this.config.camera.overviewOffset);
     this.effects = new EffectSystem(this.scene);
-    this.setupStage();
+    this.setupEnvironment();
     this.resize();
     this.renderer.render(this.scene, this.camera);
   }
 
   async start(): Promise<void> {
+    this.stage = await this.stageLoader.load(SUMMER_GARDEN_STAGE);
+    this.scene.background = new THREE.Color(SUMMER_GARDEN_STAGE.background);
+    this.scene.fog = new THREE.Fog(SUMMER_GARDEN_STAGE.fog.color, SUMMER_GARDEN_STAGE.fog.near, SUMMER_GARDEN_STAGE.fog.far);
+    this.scene.add(this.stage.root);
     const loaded = await this.loader.load(WORLDTCCHI_CONFIG);
     this.character = loaded;
     loaded.root.position.y = this.config.floating.baseAltitude;
     this.scene.add(loaded.root);
-    this.floating = new FloatingCharacterController(loaded, this.config, this.effects);
+    this.floating = new FloatingCharacterController(loaded, this.config, this.effects, this.stage.obstacles);
     this.evolution = new EvolutionSystem(this.save, loaded, this.config, () => this.saveService.save(this.save), this.showEvolutionStart, this.showEvolutionComplete);
     document.querySelector<HTMLElement>('#character-name')!.textContent = this.evolution.getCurrentName();
     this.followCamera = new FollowCamera(this.camera, loaded.root, this.config);
@@ -80,6 +91,8 @@ export class Game {
     this.input?.dispose();
     this.effects.dispose();
     if (this.character) this.loader.dispose(this.character);
+    if (this.stage) this.stageLoader.dispose(this.stage);
+    this.stageAssets.dispose();
     this.renderer.dispose();
     removeEventListener('resize', this.resize);
     visualViewport?.removeEventListener('resize', this.resize);
@@ -101,13 +114,9 @@ export class Game {
     this.renderer.render(this.scene, this.camera);
   };
 
-  private setupStage(): void {
-    this.scene.fog = new THREE.Fog(0xb8dca8, 8, 15);
+  private setupEnvironment(): void {
     this.scene.add(new THREE.HemisphereLight(0xfff9e8, 0x5e7657, 2.5));
     const sun = new THREE.DirectionalLight(0xfff4cf, 2.2); sun.position.set(4, 7, 3); this.scene.add(sun);
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(6, 64), new THREE.MeshToonMaterial({ color: 0x82bd75 })); floor.rotation.x = -Math.PI / 2; this.scene.add(floor);
-    const ring = new THREE.Mesh(new THREE.RingGeometry(3.5, 4.8, 64), new THREE.MeshToonMaterial({ color: 0xa9cf8f, side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = .006; this.scene.add(ring);
-    for (let i = 0; i < 18; i++) { const flower = new THREE.Mesh(new THREE.SphereGeometry(.035 + Math.random() * .025, 8, 6), new THREE.MeshToonMaterial({ color: i % 3 === 0 ? 0xfff0a8 : i % 3 === 1 ? 0xf6b8c8 : 0xffffff })); const angle = Math.random() * Math.PI * 2, radius = 2.8 + Math.random() * 2; flower.position.set(Math.cos(angle) * radius, .04, Math.sin(angle) * radius); this.scene.add(flower); }
     this.createDebugHelpers();
   }
 

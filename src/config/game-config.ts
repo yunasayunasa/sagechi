@@ -43,7 +43,7 @@ export const GAME_CONFIG = Object.freeze({
     calmWeights: { calm: 1, affection: 0.8, healthy: 0.5, playBook: 0.5, careSuccess: 0.1 },
     activeWeights: { active: 1, playBall: 0.5, playRattle: 0.25, careDelay: 1.2, stress: 0.5, meat: 0.25 },
   },
-  save: { key: 'sagechi.phase12.save', schemaVersion: 3 },
+  save: { key: 'sagechi.phase12.save', schemaVersion: 4 },
   debug: { enabledByDefault: false },
 });
 export type GameConfig = typeof GAME_CONFIG;

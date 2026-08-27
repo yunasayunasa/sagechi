@@ -2,6 +2,8 @@
 
 スマートフォン向け3D育成ゲーム「賢者っち」の本番プロジェクトです。現在は **Phase 1〜Phase 4** を実装しています。本物のワールドっちGLBがのんびり生活し、直接操作とお世話の傾向によって白／黒ワールドっちへ進化します。
 
+背景制作は別途段階導入中です。現在はCC0 AssetとThree.js Geometryで構成した **夏の庭** まで完成しています。子供部屋・和室は、夏の庭のスマートフォン実機確認後に追加します。
+
 ## 使用技術
 
 - Vite + Three.js + TypeScript
@@ -94,6 +96,9 @@ npm run analyze:worldtchi
 - `care/CareSystem`: ステータス時間進行、オネダリ、育成効果・履歴
 - `care/CareUI`: ステータスゲージ、お世話メニュー、オネダリ表示
 - `evolution/EvolutionSystem`: 白黒の総合判定、Toon外観差分、進化演出・復元
+- `stages/StageAssetManager`: GLB Cache、共有Resource、Toon変換
+- `stages/StageLoader`: Stage ConfigからAsset・Geometry・Interest Pointを構築
+- `stages/garden-stage`: 夏の庭の配置、軽量Collision、Interest Metadata
 - `save/SaveService`: 育成・進化データ、schema version、V1/V2→V3 Migration
 - `debug/DebugHud`: 開発情報と可視化
 
@@ -121,3 +126,11 @@ npm run analyze:worldtchi
 - 白は明るいEmissive、黒は暗いToon Colorとして同じ本番GLBへランタイム適用
 - 両形態とも約8%大きく表示し、元GLBは変更しない
 - 白＝善、黒＝悪ではなく、穏やか／活発の育成個性として扱う
+
+## 背景進行状況
+
+- 夏の庭: 実装済み（実機確認待ち）
+- 子供部屋: 未着手
+- 和室: 未着手
+
+外部Assetの出典・License・使用モデル・Audit値は `ASSET_LICENSES.md`、夏の庭の構成と概算は `docs/summer-garden-audit.md` を参照してください。
