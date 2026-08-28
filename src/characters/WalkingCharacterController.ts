@@ -45,9 +45,9 @@ export class WalkingCharacterController implements CharacterController {
   setObstacles(obstacles: readonly CircleObstacle[]): void { this.obstacles = obstacles; }
   getTargetLabel(): string { return this.state === 'walking' || this.state === 'turning' ? `${this.target.x.toFixed(2)}, ${this.target.z.toFixed(2)}` : '—'; }
   dispose(): void { this.animation.dispose(); }
-  private enterIdle(): void {
+  private enterIdle(afterInteraction = false): void {
     this.state = 'idle'; this.character.root.position.y = this.characterConfig.groundOffset;
-    this.idleLeft = random(this.config.walking.idleMinSeconds, this.config.walking.idleMaxSeconds);
+    this.idleLeft = Math.max(random(this.config.walking.idleMinSeconds, this.config.walking.idleMaxSeconds), afterInteraction ? this.config.walking.interactionRestSeconds : 0);
     this.animation.play('idle');
   }
   private chooseTarget(): void {
@@ -71,13 +71,13 @@ export class WalkingCharacterController implements CharacterController {
     this.state = 'reaction'; this.reactionCooldown = .3;
     if (effect === 'heart') { this.effects.heart(this.effectPosition()); this.effects.sparkle(this.effectPosition()); }
     else if (effect === 'sparkle') this.effects.sparkle(this.effectPosition());
-    this.animation.play(name, true, () => this.enterIdle());
+    this.animation.play(name, true, () => this.enterIdle(true));
   }
   private updateRelease(dt: number): void {
     this.releaseProgress = Math.min(1, this.releaseProgress + dt / this.config.reaction.pickupReleaseDuration);
     const eased = 1 - Math.pow(1 - this.releaseProgress, 3), destination = new THREE.Vector3(this.releaseStart.x, this.characterConfig.groundOffset, this.releaseStart.z);
     this.character.root.position.lerpVectors(this.releaseStart, destination, eased);
-    if (this.releaseProgress >= 1) this.enterIdle();
+    if (this.releaseProgress >= 1) this.enterIdle(true);
   }
   private effectPosition(): THREE.Vector3 { return this.character.root.position.clone().add(new THREE.Vector3(0, this.characterConfig.targetHeight * .85, 0)); }
   private clamp(point: THREE.Vector3): THREE.Vector3 { return point.clone().set(THREE.MathUtils.clamp(point.x, -this.config.movement.halfWidth, this.config.movement.halfWidth), THREE.MathUtils.clamp(point.y, .25, 2.8), THREE.MathUtils.clamp(point.z, -this.config.movement.halfDepth, this.config.movement.halfDepth)); }

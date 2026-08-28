@@ -15,7 +15,7 @@ export class CareUI {
   private messageTimer = 0;
   private unsubscribe: (() => void) | null = null;
 
-  constructor(private readonly care: CareSystem) {
+  constructor(private readonly care: CareSystem, private readonly getCharacterName: () => string = () => 'この子') {
     document.querySelector<HTMLButtonElement>('#care-button')!.onclick = () => this.openMain();
     document.querySelector<HTMLButtonElement>('#care-close')!.onclick = () => this.close();
     document.querySelector<HTMLButtonElement>('#request-open')!.onclick = () => this.openForRequest();
@@ -54,7 +54,7 @@ export class CareUI {
     if (this.care.request === 'food') this.openFood();
     else if (this.care.request === 'play') this.openPlay();
     else if (this.care.request === 'sleep') this.renderPanel('眠そう…', `<button data-action="rest">🛏️ 休ませる</button><button class="later" data-action="delay">あとでね</button>`);
-    else if (this.care.request === 'pet') this.renderPanel('撫でてほしそう', `<p class="care-hint">ワールドっちの上を指で撫でてね</p><button class="later" data-action="delay">あとでね</button>`);
+    else if (this.care.request === 'pet') this.renderPanel('撫でてほしそう', `<p class="care-hint">${this.getCharacterName()}の上を指で撫でてね</p><button class="later" data-action="delay">あとでね</button>`);
   }
   private openFood(): void { this.renderPanel('なにを食べる？', `<button data-food="vegetable">🥦 野菜</button><button data-food="sweet">🍰 甘いもの</button><button data-food="meat">🍖 肉</button>${this.care.request ? '<button class="later" data-action="delay">あとでね</button>' : ''}`); }
   private openPlay(): void { this.renderPanel('なにして遊ぶ？', `<button data-play="ball">⚽ ボール</button><button data-play="rattle">🪇 ガラガラ</button><button data-play="book">📖 絵本</button>${this.care.request ? '<button class="later" data-action="delay">あとでね</button>' : ''}`); }
@@ -75,6 +75,6 @@ export class CareUI {
   private showMessage(text: string): void {
     this.message.textContent = text;
     clearTimeout(this.messageTimer);
-    this.messageTimer = window.setTimeout(() => { this.message.textContent = 'ふわり、のんびり暮らしています'; }, 2600);
+    this.messageTimer = window.setTimeout(() => { this.message.textContent = `${this.getCharacterName()}は、のんびり過ごしています`; }, 2600);
   }
 }

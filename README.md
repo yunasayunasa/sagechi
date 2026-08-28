@@ -58,7 +58,7 @@ npm run analyze:worldtchi
 
 ## Debug Mode
 
-画面右上の `DEV` からHUDを切り替えます。FPS、Frame Time、delta、DPR、Character State、Target、Gesture、Draw Call、Triangleを表示します。HUD内のToggleでHit Area、Movement Area、Targetを可視化できます。Phase 5の「賢者っち確認」は10体を一時表示しますが、育成結果とSaveは変更しません。
+画面右上の `DEV` からHUDを切り替えます。FPS、Frame Time、delta、DPR、Character State、Target、Gesture、Draw Call、Triangleを表示します。HUD内のToggleでHit Area、Movement Area、Targetを可視化できます。Phase 5の「賢者っち確認」で10体を一時表示できます。選択自体は現在の進化形態を変更しませんが、お世話操作は共通の状態・履歴へ記録されます。
 
 ## 操作
 

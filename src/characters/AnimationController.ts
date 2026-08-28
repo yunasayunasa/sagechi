@@ -27,13 +27,14 @@ export class AnimationController {
   play(name: SemanticAnimation, once = false, onComplete?: () => void): void {
     const clip = this.clips.get(name) ?? this.clips.get('idle');
     if (!clip) return;
-    const next = this.mixer.clipAction(clip);
-    if (this.current === next && !once) return;
-    next.reset().setEffectiveTimeScale(1).setEffectiveWeight(1);
+    const next = this.mixer.clipAction(clip), previous = this.current;
+    if (this.current === next) { if (once) this.onComplete = onComplete ?? this.onComplete; return; }
+    previous?.stopFading(); next.stopFading();
+    next.reset().setEffectiveTimeScale(1).setEffectiveWeight(previous && previous !== next ? 0 : 1);
     next.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, once ? 1 : Infinity);
     next.clampWhenFinished = once;
     next.play();
-    this.current?.crossFadeTo(next, .28, true);
+    if (previous && previous !== next) previous.crossFadeTo(next, .32, true);
     this.current = next;
     this.onComplete = once ? onComplete ?? null : null;
   }

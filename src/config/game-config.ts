@@ -16,7 +16,7 @@ export const GAME_CONFIG = Object.freeze({
     turnSpeed: 1.25, idleMinSeconds: 4.5, idleMaxSeconds: 9.5,
     resumeAfterInteractionSeconds: 2.5,
   },
-  walking: { speed: .42, turnSpeed: 2.15, idleMinSeconds: 5.5, idleMaxSeconds: 11, lookAroundChance: .3 },
+  walking: { speed: .42, turnSpeed: 2.15, idleMinSeconds: 5.5, idleMaxSeconds: 11, interactionRestSeconds: 7.5, lookAroundChance: .1 },
   floating: {
     targetHeight: 1.6, baseAltitude: 0.78, amplitude: 0.08,
     frequencyMin: 0.72, frequencyMax: 0.95, swayAmplitude: 0.025,
@@ -32,7 +32,7 @@ export const GAME_CONFIG = Object.freeze({
   reaction: { tapDuration: 1.15, petDuration: 1.35, pickupReleaseDuration: 0.8, bounceHeight: 0.16 },
   gesture: {
     tapMaxDistancePx: 12, petStartDistancePx: 18, pickupHoldMs: 430,
-    pickupDragStartDistancePx: 8, cameraStartDistancePx: 8,
+    pickupDragStartDistancePx: 8, cameraStartDistancePx: 8, afterGestureCooldownMs: 550,
   },
   care: {
     statusPerMinute: { hunger: 4.2, sleepiness: 2.8, boredom: 4.8, mood: -1.2, stress: 0.45, health: -0.15 },

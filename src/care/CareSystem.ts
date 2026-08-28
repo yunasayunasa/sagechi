@@ -3,7 +3,7 @@ import type { GameConfig } from '../config/game-config';
 import type { GameSaveV5 } from '../save/SaveService';
 import type { FoodChoice, PlayChoice, RequestType } from './care-types';
 
-export type CareEvent = { kind: 'status' } | { kind: 'request'; request: RequestType | null } | { kind: 'reaction'; tone: 'happy' | 'calm' | 'delayed'; message: string };
+export type CareEvent = { kind: 'status' } | { kind: 'request'; request: RequestType | null } | { kind: 'reaction'; tone: 'happy' | 'calm' | 'delayed'; message: string; visualHandled?: boolean };
 
 const clamp = (value: number) => THREE.MathUtils.clamp(value, 0, 100);
 const random = (min: number, max: number) => THREE.MathUtils.randFloat(min, max);
@@ -79,8 +79,8 @@ export class CareSystem {
     this.adjust({ mood: 7, stress: -5, boredom: -3 });
     this.save.history.affection += 1;
     this.save.history.calm += 1;
-    if (this.request === 'pet') this.completeCare('撫でてもらえてごきげん！', 'happy');
-    else { this.persist(); this.emit({ kind: 'reaction', tone: 'happy', message: 'ふわっと嬉しそう。' }); }
+    if (this.request === 'pet') this.completeCare('撫でてもらえてごきげん！', 'happy', true);
+    else { this.persist(); this.emit({ kind: 'reaction', tone: 'happy', message: '嬉しそうにしている。', visualHandled: true }); }
   }
 
   delay(): void {
@@ -110,14 +110,14 @@ export class CareSystem {
     this.emit({ kind: 'request', request: this.request });
   }
 
-  private completeCare(message: string, tone: 'happy' | 'calm'): void {
+  private completeCare(message: string, tone: 'happy' | 'calm', visualHandled = false): void {
     this.save.history.careSuccess += 1;
     this.save.careCount += 1;
     this.request = null;
     this.scheduleRequest();
     this.persist();
     this.emit({ kind: 'request', request: null });
-    this.emit({ kind: 'reaction', tone, message });
+    this.emit({ kind: 'reaction', tone, message, visualHandled });
   }
 
   private adjust(values: Partial<Record<keyof GameSaveV5['status'], number>>): void {

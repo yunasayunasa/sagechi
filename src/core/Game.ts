@@ -71,8 +71,11 @@ export class Game {
     document.querySelector<HTMLElement>('#character-name')!.textContent = this.evolution.getCurrentName();
     this.followCamera = new FollowCamera(this.camera, loaded.root, this.config);
     this.input = new InputController(this.canvas, this.camera, loaded.hitArea, this.controller!, this.followCamera, this.config, () => this.care.pet());
-    this.careUi = new CareUI(this.care);
-    this.unsubscribeCareReaction = this.care.subscribe((event) => { if (event.kind === 'reaction' && event.tone === 'happy') this.controller?.pet(); else if (event.kind === 'reaction' && event.tone === 'calm') this.controller?.tap(this.camera.position); });
+    this.careUi = new CareUI(this.care, () => this.getCurrentCharacterName());
+    this.unsubscribeCareReaction = this.care.subscribe((event) => {
+      if (event.kind !== 'reaction' || event.visualHandled) return;
+      if (event.tone === 'happy') this.controller?.pet(); else if (event.tone === 'calm') this.controller?.tap(this.camera.position);
+    });
     this.debug = new DebugHud(document.querySelector('#debug-hud')!, document.querySelector('#debug-controls')!, this.renderer, this.controller!, this.input);
     this.bindUi();
     this.running = true;
@@ -221,13 +224,19 @@ export class Game {
       previousInput?.dispose(); previousController?.dispose?.();
       if (previous) this.loader.dispose(previous);
       this.followCamera?.setTarget(loaded.root);
-      this.input = new InputController(this.canvas, this.camera, loaded.hitArea, this.controller!, this.followCamera!, this.config, () => { if (config.id === 'worldtchi') this.care.pet(); });
+      this.input = new InputController(this.canvas, this.camera, loaded.hitArea, this.controller!, this.followCamera!, this.config, () => this.care.pet());
       this.debug?.setSources(this.controller!, this.input);
       if (config.id === 'worldtchi') this.evolution = new EvolutionSystem(this.save, loaded, this.config, () => this.saveService.save(this.save), this.showEvolutionStart, this.showEvolutionComplete);
       document.querySelector<HTMLElement>('#character-name')!.textContent = config.id === 'worldtchi' ? this.evolution!.getCurrentName() : config.label;
-      document.querySelector<HTMLElement>('#message')!.textContent = config.id === 'worldtchi' ? '画面のこの子に触れてみてね' : 'Phase 5 確認中：育成結果には影響しません';
+      document.querySelector<HTMLElement>('#message')!.textContent = `${this.getCurrentCharacterName()}は、のんびり過ごしています`;
+      document.querySelector<HTMLCanvasElement>('#game-canvas')!.ariaLabel = `${this.getCurrentCharacterName()}が暮らす3D空間`;
+      document.querySelector<HTMLElement>('.status-card')!.ariaLabel = `${this.getCurrentCharacterName()}の状態`;
       document.querySelector<HTMLElement>('#sage-reactions')!.hidden = config.controller !== 'walking';
     } catch (error) { console.error(error); document.querySelector<HTMLElement>('#message')!.textContent = `${config.label}を呼べませんでした`; }
     finally { loading.hidden = true; loading.textContent = 'お部屋を準備しています…'; }
+  }
+
+  private getCurrentCharacterName(): string {
+    return this.activeConfig.id === 'worldtchi' ? this.evolution?.getCurrentName() ?? WORLDTCCHI_CONFIG.label : this.activeConfig.label;
   }
 }
