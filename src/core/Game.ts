@@ -90,10 +90,12 @@ export class Game {
     this.eggView.setAvailable(this.save.eggAvailable);
     this.generation = new GenerationSystem(this.save, this.config, () => this.saveService.save(this.save), this.showEggAvailable);
     this.unsubscribeCareReaction = this.care.subscribe((event) => {
-      if (event.kind === 'care-complete') { this.generation?.recordCare(); return; }
+      if (event.kind === 'care-complete') { this.evolution?.recordCare(); this.generation?.recordCare(); return; }
       if (event.kind === 'rare-evolution') { this.startRareEvolution(); return; }
       if (event.kind !== 'reaction' || event.visualHandled) return;
-      if (event.tone === 'happy') this.controller?.pet(); else if (event.tone === 'calm') this.controller?.tap(this.camera.position);
+      if (event.tone === 'happy') this.controller?.pet();
+      else if (event.tone === 'calm') this.controller?.tap(this.camera.position);
+      else this.controller?.delayReaction();
     });
     this.debug = new DebugHud(document.querySelector('#debug-hud')!, document.querySelector('#debug-controls')!, this.renderer, this.controller!, this.input);
     this.bindUi();

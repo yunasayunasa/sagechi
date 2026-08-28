@@ -7,6 +7,7 @@ export interface CharacterController {
   update(dt: number): void;
   tap(cameraPosition: THREE.Vector3): void;
   pet(): void;
+  delayReaction(): void;
   beginPickup(point: THREE.Vector3): void;
   movePickup(point: THREE.Vector3): void;
   releasePickup(): void;

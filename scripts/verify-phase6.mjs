@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { SAGE_EVOLUTIONS, selectSageEvolution } from '../src/evolution/sage-evolution-config.ts';
+import { hasMetProgressThresholds } from '../src/progression/progression-rules.ts';
 
 const emptyHistory = { calm: 0, active: 0, sweet: 0, healthy: 0, meat: 0, playBall: 0, playRattle: 0, playBook: 0, affection: 0, stress: 0, sickCount: 0, careSuccess: 0, careDelay: 0 };
 const pick = (branch, values) => selectSageEvolution(branch, { ...emptyHistory, ...values }).id;
@@ -18,4 +19,7 @@ assert.equal(pick('black', { careDelay: 10 }), 'catzelia');
 assert.equal(pick('black', { playBall: 10 }), 'fraux');
 assert.equal(pick('black', { affection: 10 }), 'nier');
 assert.equal(pick('black', { playBook: 10 }), 'estarriola');
+assert.equal(hasMetProgressThresholds(119.99, 8, { activeSeconds: 120, careCount: 8 }), false);
+assert.equal(hasMetProgressThresholds(120, 7, { activeSeconds: 120, careCount: 8 }), false);
+assert.equal(hasMetProgressThresholds(120, 8, { activeSeconds: 120, careCount: 8 }), true);
 process.stdout.write('Phase 6 evolution routes: 10 / 10 reachable\n');

@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import type { LoadedCharacter } from '../characters/CharacterLoader';
 import type { SageCharacterId } from '../characters/character-config';
 import type { GameConfig } from '../config/game-config';
-import type { GameSaveV7, WorldtchiForm } from '../save/SaveService';
+import type { GameSaveV8, WorldtchiForm } from '../save/SaveService';
+import { hasMetProgressThresholds } from '../progression/progression-rules';
 import { selectSageEvolution, type SageEvolutionEntry } from './sage-evolution-config';
 
 type ToonSnapshot = { material: THREE.MeshToonMaterial; color: THREE.Color; emissive: THREE.Color };
@@ -21,7 +22,7 @@ export class EvolutionSystem {
   private readonly materials: ToonSnapshot[] = [];
 
   constructor(
-    private readonly save: GameSaveV7,
+    private readonly save: GameSaveV8,
     private readonly character: LoadedCharacter,
     private readonly config: GameConfig,
     private readonly persist: () => void,
@@ -41,8 +42,10 @@ export class EvolutionSystem {
 
   update(dt: number): void {
     if (!this.active) {
-      if (this.save.evolutionStage === 1 && this.save.careCount >= this.config.evolution.stage2CareCount) this.begin();
-      else if (this.save.evolutionStage === 2 && this.save.careCount >= this.config.evolution.stage3CareCount) this.beginSage();
+      this.save.stageActiveSeconds += dt;
+      const ready = hasMetProgressThresholds(this.save.stageActiveSeconds, this.save.stageCareCount, this.config.evolution);
+      if (ready && this.save.evolutionStage === 1) this.begin();
+      else if (ready && this.save.evolutionStage === 2) this.beginSage();
       return;
     }
     this.elapsed = Math.min(this.config.evolution.durationSeconds, this.elapsed + dt);
@@ -57,6 +60,12 @@ export class EvolutionSystem {
   }
 
   getCurrentName(): string { return FORM_APPEARANCE[this.getWorldForm()].name; }
+
+  recordCare(): void {
+    if (this.active || this.save.evolutionStage >= 3) return;
+    this.save.stageCareCount += 1;
+    this.persist();
+  }
 
   private begin(): void {
     const history = this.save.history;
@@ -82,6 +91,8 @@ export class EvolutionSystem {
     this.active = false;
     this.save.currentCharacter = form;
     this.save.evolutionStage = 2;
+    this.save.stageActiveSeconds = 0;
+    this.save.stageCareCount = 0;
     this.applyForm(form);
     this.persist();
     this.onComplete(form, FORM_APPEARANCE[form].name);
@@ -92,6 +103,8 @@ export class EvolutionSystem {
     this.targetSage = null;
     this.save.currentCharacter = entry.id;
     this.save.evolutionStage = 3;
+    this.save.stageActiveSeconds = 0;
+    this.save.stageCareCount = 0;
     this.save.adultActiveSeconds = 0;
     this.save.adultCareCount = 0;
     this.save.eggAvailable = false;

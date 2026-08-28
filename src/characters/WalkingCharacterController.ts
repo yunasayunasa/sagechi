@@ -6,6 +6,7 @@ import { AnimationController } from './AnimationController';
 import type { CharacterController } from './CharacterController';
 import type { LoadedCharacter } from './CharacterLoader';
 import type { CharacterConfig, SemanticAnimation } from './character-config';
+import { chooseDelayReaction } from '../care/care-rules';
 
 export type WalkingState = 'idle' | 'turning' | 'walking' | 'reaction' | 'pickup' | 'release';
 const random = (min: number, max: number) => THREE.MathUtils.randFloat(min, max);
@@ -38,6 +39,7 @@ export class WalkingCharacterController implements CharacterController {
     this.react(this.animation.has('ok') ? 'ok' : 'happy', 'sparkle');
   }
   pet(): void { if (this.state !== 'pickup') this.react('happy', 'heart'); }
+  delayReaction(): void { if (this.state !== 'pickup') this.react(chooseDelayReaction(Math.random()), 'none'); }
   playReaction(name: SemanticAnimation): void { if (name !== 'idle' && name !== 'walk') this.react(name, name === 'happy' ? 'heart' : 'sparkle'); }
   beginPickup(point: THREE.Vector3): void { this.state = 'pickup'; this.animation.play('idle'); this.pickupPoint.copy(this.clamp(point)); }
   movePickup(point: THREE.Vector3): void { if (this.state === 'pickup') this.pickupPoint.copy(this.clamp(point)); }
