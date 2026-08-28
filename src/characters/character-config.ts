@@ -30,7 +30,7 @@ export const SAGE_CHARACTER_CONFIGS = Object.freeze([
   sage('borghan', 'ボーガっち', 'borghan.glb', clips('NlaTrack.002', 'NlaTrack.010', 'NlaTrack.003', 'NlaTrack.012', 'NlaTrack.009', 'NlaTrack.001', 'NlaTrack.011', 'NlaTrack.004')),
   sage('catzelia', 'カッツェリーラっち', 'catzelia.glb', clips('NlaTrack', 'NlaTrack.006', 'NlaTrack.005', 'NlaTrack.004', 'NlaTrack.007', 'NlaTrack.001', 'NlaTrack.008', 'NlaTrack.008')),
   sage('fraux', 'フラウっち', 'fraux.glb', clips('NlaTrack.008', 'NlaTrack.001', 'NlaTrack.003', 'NlaTrack.002', 'NlaTrack.006', 'NlaTrack.005', 'NlaTrack.004', 'NlaTrack.004')),
-  sage('nier', 'ニーアっち', 'nier.glb', clips('NlaTrack.001', 'NlaTrack.005', 'NlaTrack.004', 'NlaTrack.007', 'NlaTrack.008', 'NlaTrack.002', 'NlaTrack.003', 'NlaTrack.003')),
+  sage('nier', 'ニーアっち', 'nier.glb', clips('NlaTrack.006', 'NlaTrack.001', 'NlaTrack.005', 'NlaTrack.002', 'NlaTrack.008', 'NlaTrack', 'NlaTrack.004', 'NlaTrack.003')),
   sage('estarriola', 'エスタリオラっち', 'estarriola.glb', clips('NlaTrack.009', 'NlaTrack.003', 'NlaTrack.002', 'NlaTrack', 'NlaTrack.004', 'NlaTrack.005', 'NlaTrack.008', 'NlaTrack.008'), .9),
 ] as const);
 export type SageCharacterId = typeof SAGE_CHARACTER_CONFIGS[number]['id'];

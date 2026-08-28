@@ -30,7 +30,8 @@ export class AnimationController {
     const next = this.mixer.clipAction(clip), previous = this.current;
     if (this.current === next) { if (once) this.onComplete = onComplete ?? this.onComplete; return; }
     previous?.stopFading(); next.stopFading();
-    next.reset().setEffectiveTimeScale(1).setEffectiveWeight(previous && previous !== next ? 0 : 1);
+    // Weight 0 disables an AnimationAction in Three.js, so it cannot fade in and the rig falls back to bind pose.
+    next.reset().setEffectiveTimeScale(1).setEffectiveWeight(1);
     next.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, once ? 1 : Infinity);
     next.clampWhenFinished = once;
     next.play();
