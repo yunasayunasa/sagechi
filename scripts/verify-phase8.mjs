@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { chooseDelayReaction, shouldCreateTartRequest } from '../src/care/care-rules.ts';
 import { isEggReady } from '../src/generation/generation-rules.ts';
 import { getStatusDisplayValues } from '../src/care/status-display.ts';
+import { GAME_CONFIG } from '../src/config/game-config.ts';
 
 assert.equal(shouldCreateTartRequest({ generation: 0, currentCharacter: 'worldtchi' }, 'food', .05, 0), false);
 assert.equal(shouldCreateTartRequest({ generation: 1, currentCharacter: 'worldtchi' }, 'food', .05, .049), true);
@@ -15,4 +16,5 @@ assert.equal(chooseDelayReaction(.499), 'angry');
 assert.equal(chooseDelayReaction(.5), 'sad');
 assert.deepEqual(getStatusDisplayValues({ hunger: 22, sleepiness: 16, boredom: 28, mood: 76, stress: 8, health: 92 }), { hunger: 78, sleepiness: 84, boredom: 72, mood: 76, stress: 92, health: 92 });
 assert.deepEqual(getStatusDisplayValues({ hunger: 140, sleepiness: -20, boredom: 100, mood: 120, stress: 101, health: -1 }), { hunger: 0, sleepiness: 100, boredom: 0, mood: 100, stress: 0, health: 0 });
+assert.deepEqual(GAME_CONFIG.care.statusPerMinute, { hunger: 8.4, sleepiness: 5.6, boredom: 9.6, mood: -2.4, stress: .9, health: -.3 });
 process.stdout.write('Phase 8 and status display rules: PASS\n');

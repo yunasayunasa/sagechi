@@ -35,7 +35,7 @@ export const GAME_CONFIG = Object.freeze({
     pickupDragStartDistancePx: 8, cameraStartDistancePx: 8, afterGestureCooldownMs: 550,
   },
   care: {
-    statusPerMinute: { hunger: 4.2, sleepiness: 2.8, boredom: 4.8, mood: -1.2, stress: 0.45, health: -0.15 },
+    statusPerMinute: { hunger: 8.4, sleepiness: 5.6, boredom: 9.6, mood: -2.4, stress: 0.9, health: -0.3 },
     requestMinSeconds: 18, requestMaxSeconds: 32, requestNeedThreshold: 48,
     saveIntervalSeconds: 5,
   },
