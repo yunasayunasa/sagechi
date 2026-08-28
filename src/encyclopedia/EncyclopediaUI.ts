@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import type { CharacterConfig, SageCharacterId } from '../characters/character-config';
 import { CharacterLoader, type LoadedCharacter } from '../characters/CharacterLoader';
-import type { GameSaveV6 } from '../save/SaveService';
-import { SAGE_EVOLUTIONS } from '../evolution/sage-evolution-config';
+import type { GameSaveV7 } from '../save/SaveService';
+import { ENCYCLOPEDIA_ENTRIES } from '../evolution/sage-evolution-config';
 
 export class EncyclopediaUI {
   private readonly panel = document.querySelector<HTMLElement>('#encyclopedia-panel')!;
@@ -18,7 +18,7 @@ export class EncyclopediaUI {
   private lastTime = 0;
   private loadingToken = 0;
 
-  constructor(private readonly save: GameSaveV6, private readonly configs: readonly CharacterConfig[], private readonly pixelRatioCap: number) {
+  constructor(private readonly save: GameSaveV7, private readonly configs: readonly CharacterConfig[], private readonly pixelRatioCap: number) {
     document.querySelector<HTMLButtonElement>('#encyclopedia-button')!.onclick = () => this.open();
     document.querySelector<HTMLButtonElement>('#encyclopedia-close')!.onclick = () => this.close();
     this.list.addEventListener('click', this.onListClick);
@@ -31,11 +31,12 @@ export class EncyclopediaUI {
 
   refresh(): void {
     const discovered = new Set(this.save.encyclopedia);
-    document.querySelector<HTMLElement>('#encyclopedia-count')!.textContent = `${discovered.size}/10`;
-    document.querySelector<HTMLElement>('#encyclopedia-count-header')!.textContent = `${discovered.size} / 10`;
-    this.list.innerHTML = SAGE_EVOLUTIONS.map((entry) => {
+    document.querySelector<HTMLElement>('#encyclopedia-count')!.textContent = `${discovered.size}/11`;
+    document.querySelector<HTMLElement>('#encyclopedia-count-header')!.textContent = `${discovered.size} / 11`;
+    this.list.innerHTML = ENCYCLOPEDIA_ENTRIES.map((entry) => {
       const known = discovered.has(entry.id);
-      return `<button type="button" data-character="${entry.id}" class="encyclopedia-entry ${known ? 'discovered' : 'unknown'}"><span class="entry-mark">${known ? (entry.branch === 'white' ? '✦' : '◆') : '？'}</span><b>${known ? entry.name : '？？？'}</b><small>${known ? '3Dで見る' : entry.hint}</small></button>`;
+      const mark = entry.branch === 'rare' ? '★' : entry.branch === 'white' ? '✦' : '◆';
+      return `<button type="button" data-character="${entry.id}" class="encyclopedia-entry ${known ? 'discovered' : 'unknown'} ${entry.branch === 'rare' ? 'rare-entry' : ''}"><span class="entry-mark">${known ? mark : '？'}</span><b>${known ? entry.name : '？？？'}</b><small>${known ? '3Dで見る' : entry.hint}</small></button>`;
     }).join('');
   }
 
@@ -50,8 +51,8 @@ export class EncyclopediaUI {
     document.querySelector<HTMLElement>('#map-panel')!.hidden = true;
     this.refresh();
     this.panel.hidden = false;
-    const firstKnown = SAGE_EVOLUTIONS.find((entry) => this.save.encyclopedia.includes(entry.id));
-    this.showEntry(firstKnown?.id ?? SAGE_EVOLUTIONS[0].id);
+    const firstKnown = ENCYCLOPEDIA_ENTRIES.find((entry) => this.save.encyclopedia.includes(entry.id));
+    this.showEntry(firstKnown?.id ?? ENCYCLOPEDIA_ENTRIES[0].id);
   }
 
   private close(): void {
@@ -67,7 +68,7 @@ export class EncyclopediaUI {
   };
 
   private showEntry(id: SageCharacterId): void {
-    const entry = SAGE_EVOLUTIONS.find((item) => item.id === id);
+    const entry = ENCYCLOPEDIA_ENTRIES.find((item) => item.id === id);
     if (!entry) return;
     const known = this.save.encyclopedia.includes(id);
     this.detail.querySelector<HTMLElement>('h3')!.textContent = known ? entry.name : '？？？';

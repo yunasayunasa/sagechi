@@ -14,7 +14,8 @@
     "verify:sages": "node scripts/verify-sage-assets.mjs",
     "verify:animation": "node scripts/verify-animation-crossfade.mjs",
     "verify:phase6": "node --experimental-strip-types scripts/verify-phase6.mjs",
-    "verify": "npm run typecheck && npm run build && npm run analyze:worldtchi && npm run verify:sages && npm run verify:animation && npm run verify:phase6"
+    "verify:phase8": "node --experimental-strip-types scripts/verify-phase8.mjs",
+    "verify": "npm run typecheck && npm run build && npm run analyze:worldtchi && npm run verify:sages && npm run verify:animation && npm run verify:phase6 && npm run verify:phase8"
   },
   "dependencies": { "three": "^0.180.0" },
   "devDependencies": { "@openai/sites-vite-plugin": "0.2.0", "@types/three": "^0.180.0", "typescript": "^5.9.2", "vite": "^8.0.0" }

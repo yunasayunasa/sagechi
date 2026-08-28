@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { LoadedCharacter } from '../characters/CharacterLoader';
 import type { SageCharacterId } from '../characters/character-config';
 import type { GameConfig } from '../config/game-config';
-import type { GameSaveV6, WorldtchiForm } from '../save/SaveService';
+import type { GameSaveV7, WorldtchiForm } from '../save/SaveService';
 import { selectSageEvolution, type SageEvolutionEntry } from './sage-evolution-config';
 
 type ToonSnapshot = { material: THREE.MeshToonMaterial; color: THREE.Color; emissive: THREE.Color };
@@ -21,7 +21,7 @@ export class EvolutionSystem {
   private readonly materials: ToonSnapshot[] = [];
 
   constructor(
-    private readonly save: GameSaveV6,
+    private readonly save: GameSaveV7,
     private readonly character: LoadedCharacter,
     private readonly config: GameConfig,
     private readonly persist: () => void,
@@ -92,6 +92,9 @@ export class EvolutionSystem {
     this.targetSage = null;
     this.save.currentCharacter = entry.id;
     this.save.evolutionStage = 3;
+    this.save.adultActiveSeconds = 0;
+    this.save.adultCareCount = 0;
+    this.save.eggAvailable = false;
     if (!this.save.encyclopedia.includes(entry.id)) this.save.encyclopedia.push(entry.id);
     this.persist();
     this.onSageComplete(entry.id, entry.name);

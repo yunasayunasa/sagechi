@@ -1,5 +1,5 @@
-export type RequestType = 'food' | 'play' | 'sleep' | 'pet';
-export type FoodChoice = 'vegetable' | 'sweet' | 'meat';
+export type RequestType = 'food' | 'play' | 'sleep' | 'pet' | 'tart';
+export type FoodChoice = 'vegetable' | 'sweet' | 'meat' | 'tart';
 export type PlayChoice = 'ball' | 'rattle' | 'book';
 
 export interface CharacterStatus {

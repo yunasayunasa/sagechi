@@ -32,6 +32,7 @@ export const SAGE_CHARACTER_CONFIGS = Object.freeze([
   sage('fraux', 'フラウっち', 'fraux.glb', clips('idle', 'walk', 'happy', 'ok', 'lookAround', 'angry', 'cry', 'cry', 'fear')),
   sage('nier', 'ニーアっち', 'nier.glb', clips('idle', 'walk', 'happy', 'ok', 'lookAround', 'angry', 'sad', 'cry', 'fear')),
   sage('estarriola', 'エスタリオラっち', 'estarriola.glb', clips('idle', 'walk', 'happy', 'ok', 'lookAround', 'angry', 'cry', 'cry', 'fear'), .9),
+  sage('tartman', 'タルトマンっち', 'tartman.glb', clips('idle', 'walk', 'happy', 'ok', 'lookAround', 'angry', 'sad', 'cry', 'fear')),
 ] as const);
 export type SageCharacterId = typeof SAGE_CHARACTER_CONFIGS[number]['id'];
 export const CHARACTER_CONFIGS = Object.freeze([WORLDTCCHI_CONFIG, ...SAGE_CHARACTER_CONFIGS]);

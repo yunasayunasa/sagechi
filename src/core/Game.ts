@@ -12,6 +12,8 @@ import { DebugHud } from '../debug/DebugHud';
 import { EffectSystem } from '../effects/EffectSystem';
 import { EncyclopediaUI } from '../encyclopedia/EncyclopediaUI';
 import { EvolutionSystem } from '../evolution/EvolutionSystem';
+import { EggView } from '../generation/EggView';
+import { GenerationSystem } from '../generation/GenerationSystem';
 import { InputController } from '../input/InputController';
 import { isSageCharacterId, SaveService } from '../save/SaveService';
 import { StageAssetManager } from '../stages/StageAssetManager';
@@ -41,6 +43,8 @@ export class Game {
   private careUi: CareUI | null = null;
   private evolution: EvolutionSystem | null = null;
   private encyclopedia: EncyclopediaUI | null = null;
+  private generation: GenerationSystem | null = null;
+  private eggView: EggView | null = null;
   private unsubscribeCareReaction: (() => void) | null = null;
   private debug: DebugHud | null = null;
   private frame = 0;
@@ -49,6 +53,10 @@ export class Game {
   private areaHelper: THREE.LineLoop | null = null;
   private targetHelper: THREE.Mesh | null = null;
   private switchingStage = false;
+  private switchingGeneration = false;
+  private rareEvolutionTarget: CharacterConfig | null = null;
+  private rareEvolutionElapsed = 0;
+  private rareEvolutionLoading = false;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: this.config.renderer.antialias, powerPreference: 'high-performance' });
@@ -78,7 +86,12 @@ export class Game {
     this.input = new InputController(this.canvas, this.camera, loaded.hitArea, this.controller!, this.followCamera, this.config, () => this.care.pet());
     this.careUi = new CareUI(this.care, () => this.getCurrentCharacterName());
     this.encyclopedia = new EncyclopediaUI(this.save, SAGE_CHARACTER_CONFIGS, this.config.renderer.pixelRatioCap);
+    this.eggView = new EggView(this.scene, () => void this.beginNextGeneration());
+    this.eggView.setAvailable(this.save.eggAvailable);
+    this.generation = new GenerationSystem(this.save, this.config, () => this.saveService.save(this.save), this.showEggAvailable);
     this.unsubscribeCareReaction = this.care.subscribe((event) => {
+      if (event.kind === 'care-complete') { this.generation?.recordCare(); return; }
+      if (event.kind === 'rare-evolution') { this.startRareEvolution(); return; }
       if (event.kind !== 'reaction' || event.visualHandled) return;
       if (event.tone === 'happy') this.controller?.pet(); else if (event.tone === 'calm') this.controller?.tap(this.camera.position);
     });
@@ -98,6 +111,7 @@ export class Game {
     this.saveService.save(this.save);
     this.careUi?.dispose();
     this.encyclopedia?.dispose();
+    this.eggView?.dispose();
     this.unsubscribeCareReaction?.();
     this.input?.dispose();
     this.controller?.dispose?.();
@@ -116,8 +130,11 @@ export class Game {
     this.frame = requestAnimationFrame(this.loop);
     if (!this.visible) return;
     const dt = Math.min(this.clock.getDelta(), this.config.timing.maxDeltaSeconds);
-    if (!this.evolution?.active) this.controller?.update(dt);
+    if (!this.evolution?.active && !this.rareEvolutionTarget) this.controller?.update(dt);
     if (this.activeConfig.id === 'worldtchi') this.evolution?.update(dt);
+    this.updateRareEvolution(dt);
+    if (!this.rareEvolutionTarget) this.generation?.update(dt);
+    this.eggView?.update(dt);
     this.followCamera?.update(dt);
     this.care.update(dt);
     this.effects.update(dt);
@@ -149,6 +166,7 @@ export class Game {
     selector.innerHTML = `<option value="worldtchi">ワールドっち（現在の育成個体）</option>${SAGE_CHARACTER_CONFIGS.map((config) => `<option value="${config.id}">${config.label}</option>`).join('')}`;
     selector.onchange = () => void this.previewCharacter(selector.value);
     document.querySelectorAll<HTMLButtonElement>('[data-reaction]').forEach((button) => { button.onclick = () => (this.controller as WalkingCharacterController)?.playReaction?.(button.dataset.reaction as SemanticAnimation); });
+    document.querySelector<HTMLButtonElement>('#force-tart-request')!.onclick = () => this.care.forceTartRequest();
     document.querySelector<HTMLButtonElement>('#evolution-close')!.onclick = () => { document.querySelector<HTMLElement>('#evolution-overlay')!.hidden = true; };
     const mapPanel = document.querySelector<HTMLElement>('#map-panel')!;
     document.querySelector<HTMLButtonElement>('#map-button')!.onclick = () => { mapPanel.hidden = false; };
@@ -203,6 +221,7 @@ export class Game {
     const config = SAGE_CHARACTER_CONFIGS.find((item) => item.id === id);
     if (!config) return;
     void this.swapCharacter(config).then(() => {
+      this.eggView?.setAvailable(false);
       this.encyclopedia?.refresh();
       const overlay = document.querySelector<HTMLElement>('#evolution-overlay')!;
       overlay.querySelector('p')!.textContent = '育て方が、この子だけの姿になった！';
@@ -215,6 +234,77 @@ export class Game {
       document.querySelector<HTMLElement>('#message')!.textContent = `${name}を呼べませんでした`;
     });
   };
+
+  private showEggAvailable = (): void => {
+    this.eggView?.setAvailable(true);
+    document.querySelector<HTMLElement>('#message')!.textContent = 'いつの間にか、そばに卵がある。';
+    this.effects.sparkle(new THREE.Vector3(-1.55, 1.15, .78));
+  };
+
+  private startRareEvolution(): void {
+    if (this.save.currentCharacter === 'tartman' || this.rareEvolutionTarget) return;
+    const config = SAGE_CHARACTER_CONFIGS.find((item) => item.id === 'tartman');
+    if (!config) return;
+    const preserveEgg = this.save.eggAvailable;
+    this.save.currentCharacter = 'tartman';
+    this.save.evolutionStage = 3;
+    if (!this.save.encyclopedia.includes('tartman')) this.save.encyclopedia.push('tartman');
+    this.generation?.resetAdultProgress(preserveEgg);
+    this.encyclopedia?.refresh();
+    this.evolution = null;
+    this.rareEvolutionTarget = config;
+    this.rareEvolutionElapsed = 0;
+    const overlay = document.querySelector<HTMLElement>('#evolution-overlay')!;
+    overlay.hidden = false;
+    overlay.querySelector('p')!.textContent = 'タルトの甘い香りに包まれて……';
+    overlay.querySelector('h2')!.textContent = '特別な進化の気配';
+    overlay.querySelector<HTMLButtonElement>('button')!.hidden = true;
+    this.saveService.save(this.save);
+  }
+
+  private updateRareEvolution(dt: number): void {
+    if (!this.rareEvolutionTarget || this.rareEvolutionLoading) return;
+    this.rareEvolutionElapsed += dt;
+    if (this.rareEvolutionElapsed < this.config.evolution.durationSeconds) return;
+    const config = this.rareEvolutionTarget;
+    this.rareEvolutionLoading = true;
+    void this.swapCharacter(config).then(() => {
+      this.rareEvolutionTarget = null;
+      this.rareEvolutionLoading = false;
+      const overlay = document.querySelector<HTMLElement>('#evolution-overlay')!;
+      overlay.querySelector('p')!.textContent = '世代を越えた出会いが、特別な姿になった！';
+      overlay.querySelector('h2')!.textContent = 'タルトマンっち に進化した';
+      overlay.querySelector<HTMLButtonElement>('button')!.hidden = false;
+      this.effects.sparkle(this.character!.root.position.clone().add(new THREE.Vector3(0, 2, 0)));
+    }).catch((error: unknown) => {
+      console.error(error);
+      this.rareEvolutionTarget = null;
+      this.rareEvolutionLoading = false;
+      document.querySelector<HTMLElement>('#evolution-overlay')!.hidden = true;
+      document.querySelector<HTMLElement>('#message')!.textContent = 'タルトマンっちを呼べませんでした';
+    });
+  }
+
+  private async beginNextGeneration(): Promise<void> {
+    if (this.switchingGeneration || !this.save.eggAvailable) return;
+    this.switchingGeneration = true;
+    const loading = document.querySelector<HTMLElement>('#stage-loading')!;
+    loading.textContent = '卵を見守っています…'; loading.hidden = false;
+    try {
+      this.generation?.beginNextGeneration();
+      this.care.resetForGeneration();
+      this.eggView?.setAvailable(false);
+      await this.swapCharacter(WORLDTCCHI_CONFIG);
+      document.querySelector<HTMLSelectElement>('#character-preview')!.value = 'worldtchi';
+      document.querySelector<HTMLElement>('#message')!.textContent = `第${this.save.generation + 1}世代のワールドっちが生まれた！`;
+      this.effects.sparkle(this.character!.root.position.clone().add(new THREE.Vector3(0, 1.6, 0)));
+    } catch (error) {
+      console.error(error);
+      document.querySelector<HTMLElement>('#message')!.textContent = '卵から生まれる準備に失敗しました';
+    } finally {
+      loading.hidden = true; loading.textContent = 'お部屋を準備しています…'; this.switchingGeneration = false;
+    }
+  }
 
   private async switchStage(id: StageId): Promise<void> {
     if (this.switchingStage || id === this.save.map) { document.querySelector<HTMLElement>('#map-panel')!.hidden = true; return; }
@@ -231,7 +321,7 @@ export class Game {
 
   private updateStageUi(): void {
     const config = STAGES[this.save.map]; document.querySelector<HTMLElement>('#stage-label')!.textContent = config.label;
-    document.querySelector<HTMLElement>('#phase-label')!.textContent = `PHASE 6 / ${config.id.toUpperCase()}`;
+    document.querySelector<HTMLElement>('#phase-label')!.textContent = `PHASE 8 / ${config.id.toUpperCase()}`;
     document.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach((button) => { button.classList.toggle('active', button.dataset.stage === this.save.map); });
   }
 

@@ -13,10 +13,11 @@
 | カッツェリーラ | 19,386 | 1 | 1 | 41 | 11 | 1×1024² |
 | フラウ | 19,248 | 1 | 1 | 41 | 9 | 3×1024² |
 | ニーア | 18,862 | 1 | 1 | 41 | 9 | 3×2048² |
-
-全10体を再利用できるよう、主要AnimationClip名を `idle / walk / happy / ok / lookAround / angry / sad / cry / fear` へ正規化している。変換表は `assets/animation-maps/<id>.json`。意味を目視確定していないゲーム未使用Clipは、誤った意味名を付けず `unclassifiedXX` として残す。
 | エスタリオラ | 19,546 | 1 | 1 | 41 | 11 | 1×1024² |
+| タルトマン | 18,580 | 13 | 1 | 41 | 16 | 1×2048² |
+
+全11体を再利用できるよう、主要AnimationClip名を `idle / walk / happy / ok / lookAround / angry / sad / cry / fear` へ正規化している。変換表は `assets/animation-maps/<id>.json`。意味を目視確定していないゲーム未使用Clipは、誤った意味名を付けず `unclassifiedXX` として残す。
 
 全モデルがSkinnedMeshで、Phase 5の想定値（約2万Triangle、約41 Bone、複数Animation）内。Raw Clip名は `NlaTrack...` のため、`character-config.ts` で意味名へ変換し、ゲームロジックはRaw Clip名を参照しない。
 
-ブラウザ自動確認では10体連続交換後も警告・Errorなし。子供部屋で約29〜34 Draw Call、約21,700〜22,900 Triangle、デスクトップ検証環境で約53〜57 FPS。最終的なiPhone Safari実機性能と各Animationの演技内容は公開版で目視確認する。
+既存10体はブラウザ連続交換済み。タルトマンは13 Meshのため既存1 MeshモデルよりDraw Callが増える。最終的なiPhone Safari性能、サイズ、向き、各Animationの演技内容は公開版で目視確認する。

@@ -1,28 +1,31 @@
 import * as THREE from 'three';
 import type { GameConfig } from '../config/game-config';
-import type { GameSaveV6 } from '../save/SaveService';
+import type { GameSaveV7 } from '../save/SaveService';
 import type { FoodChoice, PlayChoice, RequestType } from './care-types';
+import { shouldCreateTartRequest } from './care-rules';
 
-export type CareEvent = { kind: 'status' } | { kind: 'request'; request: RequestType | null } | { kind: 'reaction'; tone: 'happy' | 'calm' | 'delayed'; message: string; visualHandled?: boolean };
+export type CareEvent = { kind: 'status' } | { kind: 'request'; request: RequestType | null } | { kind: 'reaction'; tone: 'happy' | 'calm' | 'delayed'; message: string; visualHandled?: boolean } | { kind: 'care-complete' } | { kind: 'rare-evolution' };
 
 const clamp = (value: number) => THREE.MathUtils.clamp(value, 0, 100);
 const random = (min: number, max: number) => THREE.MathUtils.randFloat(min, max);
 
 export class CareSystem {
-  request: RequestType | null = null;
+  request: RequestType | null;
   private requestClock = 0;
   private requestAt = 0;
   private saveClock = 0;
   private statusUiClock = 0;
   private readonly listeners = new Set<(event: CareEvent) => void>();
 
-  constructor(readonly save: GameSaveV6, private readonly config: GameConfig, private readonly persist: () => void) {
+  constructor(readonly save: GameSaveV7, private readonly config: GameConfig, private readonly persist: () => void, private readonly rng: () => number = Math.random) {
+    this.request = save.pendingRequest;
     this.scheduleRequest();
   }
 
   subscribe(listener: (event: CareEvent) => void): () => void {
     this.listeners.add(listener);
     listener({ kind: 'status' });
+    listener({ kind: 'request', request: this.request });
     return () => this.listeners.delete(listener);
   }
 
@@ -44,6 +47,14 @@ export class CareSystem {
   }
 
   feed(choice: FoodChoice): void {
+    if (choice === 'tart') {
+      if (this.request !== 'tart') return;
+      this.adjust({ hunger: -36, mood: 16, stress: -4 });
+      this.save.history.sweet += 2;
+      this.completeCare('タルトをとても嬉しそうに食べた！', 'happy');
+      this.emit({ kind: 'rare-evolution' });
+      return;
+    }
     const effects = {
       vegetable: { hunger: -27, mood: 5, stress: -2 },
       sweet: { hunger: -22, mood: 13, stress: -1 },
@@ -91,9 +102,11 @@ export class CareSystem {
     this.save.history.careDelay += 1;
     this.save.careCount += 1;
     this.request = null;
+    this.save.pendingRequest = null;
     this.scheduleRequest();
     this.persist();
     this.emit({ kind: 'request', request: null });
+    this.emit({ kind: 'care-complete' });
     this.emit({ kind: 'reaction', tone: 'delayed', message: 'わかった、あとでね。' });
   }
 
@@ -105,8 +118,11 @@ export class CareSystem {
     ];
     const needy = Math.max(status.hunger, status.boredom, status.sleepiness, status.stress) >= this.config.care.requestNeedThreshold;
     const pool = needy ? weighted : weighted.map(([type, weight]) => [type, Math.sqrt(weight)] as [RequestType, number]);
-    let pick = Math.random() * pool.reduce((sum, item) => sum + item[1], 0);
+    let pick = this.rng() * pool.reduce((sum, item) => sum + item[1], 0);
     this.request = pool.find((item) => (pick -= item[1]) <= 0)?.[0] ?? 'pet';
+    if (shouldCreateTartRequest(this.save, this.request, this.config.generation.rareTartChance, this.rng())) this.request = 'tart';
+    this.save.pendingRequest = this.request;
+    this.persist();
     this.emit({ kind: 'request', request: this.request });
   }
 
@@ -114,14 +130,32 @@ export class CareSystem {
     this.save.history.careSuccess += 1;
     this.save.careCount += 1;
     this.request = null;
+    this.save.pendingRequest = null;
     this.scheduleRequest();
     this.persist();
     this.emit({ kind: 'request', request: null });
+    this.emit({ kind: 'care-complete' });
     this.emit({ kind: 'reaction', tone, message, visualHandled });
   }
 
-  private adjust(values: Partial<Record<keyof GameSaveV6['status'], number>>): void {
-    for (const key of Object.keys(values) as Array<keyof GameSaveV6['status']>) this.save.status[key] = clamp(this.save.status[key] + (values[key] ?? 0));
+  forceTartRequest(): void {
+    this.request = 'tart';
+    this.save.pendingRequest = 'tart';
+    this.persist();
+    this.emit({ kind: 'request', request: 'tart' });
+  }
+
+  resetForGeneration(): void {
+    this.request = null;
+    this.save.pendingRequest = null;
+    this.scheduleRequest();
+    this.persist();
+    this.emit({ kind: 'status' });
+    this.emit({ kind: 'request', request: null });
+  }
+
+  private adjust(values: Partial<Record<keyof GameSaveV7['status'], number>>): void {
+    for (const key of Object.keys(values) as Array<keyof GameSaveV7['status']>) this.save.status[key] = clamp(this.save.status[key] + (values[key] ?? 0));
     this.emit({ kind: 'status' });
   }
 

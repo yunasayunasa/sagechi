@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const directory = path.resolve('public/models/sages');
-const expected = ['maria-theresa','caim','lobelia','alanaan','haaselia','borghan','catzelia','fraux','nier','estarriola'];
+const expected = ['maria-theresa','caim','lobelia','alanaan','haaselia','borghan','catzelia','fraux','nier','estarriola','tartman'];
 for (const id of expected) {
   const file = path.join(directory, `${id}.glb`);
   if (!fs.existsSync(file)) throw new Error(`賢者っちAssetがありません: ${file}`);
