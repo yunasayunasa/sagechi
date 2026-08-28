@@ -10,9 +10,10 @@ import { WalkingCharacterController } from '../characters/WalkingCharacterContro
 import { GAME_CONFIG } from '../config/game-config';
 import { DebugHud } from '../debug/DebugHud';
 import { EffectSystem } from '../effects/EffectSystem';
+import { EncyclopediaUI } from '../encyclopedia/EncyclopediaUI';
 import { EvolutionSystem } from '../evolution/EvolutionSystem';
 import { InputController } from '../input/InputController';
-import { SaveService } from '../save/SaveService';
+import { isSageCharacterId, SaveService } from '../save/SaveService';
 import { StageAssetManager } from '../stages/StageAssetManager';
 import { StageLoader } from '../stages/StageLoader';
 import { STAGES } from '../stages/stage-registry';
@@ -39,6 +40,7 @@ export class Game {
   private input: InputController | null = null;
   private careUi: CareUI | null = null;
   private evolution: EvolutionSystem | null = null;
+  private encyclopedia: EncyclopediaUI | null = null;
   private unsubscribeCareReaction: (() => void) | null = null;
   private debug: DebugHud | null = null;
   private frame = 0;
@@ -66,12 +68,16 @@ export class Game {
     this.scene.background = new THREE.Color(initialStage.background);
     this.scene.fog = new THREE.Fog(initialStage.fog.color, initialStage.fog.near, initialStage.fog.far);
     this.scene.add(this.stage.root);
-    const loaded = await this.mountCharacter(WORLDTCCHI_CONFIG);
-    this.evolution = new EvolutionSystem(this.save, loaded, this.config, () => this.saveService.save(this.save), this.showEvolutionStart, this.showEvolutionComplete);
-    document.querySelector<HTMLElement>('#character-name')!.textContent = this.evolution.getCurrentName();
+    const initialConfig = isSageCharacterId(this.save.currentCharacter)
+      ? SAGE_CHARACTER_CONFIGS.find((config) => config.id === this.save.currentCharacter) ?? WORLDTCCHI_CONFIG
+      : WORLDTCCHI_CONFIG;
+    const loaded = await this.mountCharacter(initialConfig);
+    if (initialConfig.id === 'worldtchi') this.evolution = this.createEvolution(loaded);
+    document.querySelector<HTMLElement>('#character-name')!.textContent = initialConfig.id === 'worldtchi' ? this.evolution!.getCurrentName() : initialConfig.label;
     this.followCamera = new FollowCamera(this.camera, loaded.root, this.config);
     this.input = new InputController(this.canvas, this.camera, loaded.hitArea, this.controller!, this.followCamera, this.config, () => this.care.pet());
     this.careUi = new CareUI(this.care, () => this.getCurrentCharacterName());
+    this.encyclopedia = new EncyclopediaUI(this.save, SAGE_CHARACTER_CONFIGS, this.config.renderer.pixelRatioCap);
     this.unsubscribeCareReaction = this.care.subscribe((event) => {
       if (event.kind !== 'reaction' || event.visualHandled) return;
       if (event.tone === 'happy') this.controller?.pet(); else if (event.tone === 'calm') this.controller?.tap(this.camera.position);
@@ -91,6 +97,7 @@ export class Game {
     cancelAnimationFrame(this.frame);
     this.saveService.save(this.save);
     this.careUi?.dispose();
+    this.encyclopedia?.dispose();
     this.unsubscribeCareReaction?.();
     this.input?.dispose();
     this.controller?.dispose?.();
@@ -184,6 +191,31 @@ export class Game {
     this.effects.sparkle(this.character!.root.position.clone().add(new THREE.Vector3(0, 2, 0)));
   };
 
+  private showSageEvolutionStart = (): void => {
+    const overlay = document.querySelector<HTMLElement>('#evolution-overlay')!;
+    overlay.hidden = false;
+    overlay.querySelector('p')!.textContent = '育ててきた個性が集まって……';
+    overlay.querySelector('h2')!.textContent = '賢者っちへ進化する気配';
+    overlay.querySelector<HTMLButtonElement>('button')!.hidden = true;
+  };
+
+  private showSageEvolutionComplete = (id: typeof SAGE_CHARACTER_CONFIGS[number]['id'], name: string): void => {
+    const config = SAGE_CHARACTER_CONFIGS.find((item) => item.id === id);
+    if (!config) return;
+    void this.swapCharacter(config).then(() => {
+      this.encyclopedia?.refresh();
+      const overlay = document.querySelector<HTMLElement>('#evolution-overlay')!;
+      overlay.querySelector('p')!.textContent = '育て方が、この子だけの姿になった！';
+      overlay.querySelector('h2')!.textContent = `${name} に進化した`;
+      overlay.querySelector<HTMLButtonElement>('button')!.hidden = false;
+      this.effects.sparkle(this.character!.root.position.clone().add(new THREE.Vector3(0, 2, 0)));
+    }).catch((error: unknown) => {
+      console.error(error);
+      document.querySelector<HTMLElement>('#evolution-overlay')!.hidden = true;
+      document.querySelector<HTMLElement>('#message')!.textContent = `${name}を呼べませんでした`;
+    });
+  };
+
   private async switchStage(id: StageId): Promise<void> {
     if (this.switchingStage || id === this.save.map) { document.querySelector<HTMLElement>('#map-panel')!.hidden = true; return; }
     this.switchingStage = true;
@@ -199,7 +231,7 @@ export class Game {
 
   private updateStageUi(): void {
     const config = STAGES[this.save.map]; document.querySelector<HTMLElement>('#stage-label')!.textContent = config.label;
-    document.querySelector<HTMLElement>('#phase-label')!.textContent = `PHASE 5 / ${config.id.toUpperCase()}`;
+    document.querySelector<HTMLElement>('#phase-label')!.textContent = `PHASE 6 / ${config.id.toUpperCase()}`;
     document.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach((button) => { button.classList.toggle('active', button.dataset.stage === this.save.map); });
   }
 
@@ -219,21 +251,33 @@ export class Game {
     if (!config || config.id === this.activeConfig.id) return;
     const loading = document.querySelector<HTMLElement>('#stage-loading')!; loading.textContent = `${config.label}を呼んでいます…`; loading.hidden = false;
     try {
-      const previous = this.character, previousController = this.controller, previousInput = this.input;
-      const loaded = await this.mountCharacter(config);
-      previousInput?.dispose(); previousController?.dispose?.();
-      if (previous) this.loader.dispose(previous);
-      this.followCamera?.setTarget(loaded.root);
-      this.input = new InputController(this.canvas, this.camera, loaded.hitArea, this.controller!, this.followCamera!, this.config, () => this.care.pet());
-      this.debug?.setSources(this.controller!, this.input);
-      if (config.id === 'worldtchi') this.evolution = new EvolutionSystem(this.save, loaded, this.config, () => this.saveService.save(this.save), this.showEvolutionStart, this.showEvolutionComplete);
-      document.querySelector<HTMLElement>('#character-name')!.textContent = config.id === 'worldtchi' ? this.evolution!.getCurrentName() : config.label;
-      document.querySelector<HTMLElement>('#message')!.textContent = `${this.getCurrentCharacterName()}は、のんびり過ごしています`;
-      document.querySelector<HTMLCanvasElement>('#game-canvas')!.ariaLabel = `${this.getCurrentCharacterName()}が暮らす3D空間`;
-      document.querySelector<HTMLElement>('.status-card')!.ariaLabel = `${this.getCurrentCharacterName()}の状態`;
-      document.querySelector<HTMLElement>('#sage-reactions')!.hidden = config.controller !== 'walking';
+      await this.swapCharacter(config);
     } catch (error) { console.error(error); document.querySelector<HTMLElement>('#message')!.textContent = `${config.label}を呼べませんでした`; }
     finally { loading.hidden = true; loading.textContent = 'お部屋を準備しています…'; }
+  }
+
+  private async swapCharacter(config: CharacterConfig): Promise<void> {
+    const previous = this.character, previousController = this.controller, previousInput = this.input;
+    const loaded = await this.mountCharacter(config);
+    previousInput?.dispose(); previousController?.dispose?.();
+    if (previous) this.loader.dispose(previous);
+    this.followCamera?.setTarget(loaded.root);
+    this.input = new InputController(this.canvas, this.camera, loaded.hitArea, this.controller!, this.followCamera!, this.config, () => this.care.pet());
+    this.debug?.setSources(this.controller!, this.input);
+    this.evolution = config.id === 'worldtchi' && this.save.evolutionStage < 3 ? this.createEvolution(loaded) : null;
+    document.querySelector<HTMLElement>('#character-name')!.textContent = config.id === 'worldtchi' ? this.evolution?.getCurrentName() ?? WORLDTCCHI_CONFIG.label : config.label;
+    document.querySelector<HTMLElement>('#message')!.textContent = `${this.getCurrentCharacterName()}は、のんびり過ごしています`;
+    document.querySelector<HTMLCanvasElement>('#game-canvas')!.ariaLabel = `${this.getCurrentCharacterName()}が暮らす3D空間`;
+    document.querySelector<HTMLElement>('.status-card')!.ariaLabel = `${this.getCurrentCharacterName()}の状態`;
+    document.querySelector<HTMLElement>('#sage-reactions')!.hidden = config.controller !== 'walking';
+  }
+
+  private createEvolution(loaded: LoadedCharacter): EvolutionSystem {
+    return new EvolutionSystem(
+      this.save, loaded, this.config, () => this.saveService.save(this.save),
+      this.showEvolutionStart, this.showEvolutionComplete,
+      this.showSageEvolutionStart, this.showSageEvolutionComplete,
+    );
   }
 
   private getCurrentCharacterName(): string {

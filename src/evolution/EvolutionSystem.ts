@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import type { LoadedCharacter } from '../characters/CharacterLoader';
+import type { SageCharacterId } from '../characters/character-config';
 import type { GameConfig } from '../config/game-config';
-import type { GameSaveV5, WorldtchiForm } from '../save/SaveService';
+import type { GameSaveV6, WorldtchiForm } from '../save/SaveService';
+import { selectSageEvolution, type SageEvolutionEntry } from './sage-evolution-config';
 
 type ToonSnapshot = { material: THREE.MeshToonMaterial; color: THREE.Color; emissive: THREE.Color };
 
@@ -15,15 +17,18 @@ export class EvolutionSystem {
   active = false;
   private elapsed = 0;
   private targetForm: Exclude<WorldtchiForm, 'worldtchi'> | null = null;
+  private targetSage: SageEvolutionEntry | null = null;
   private readonly materials: ToonSnapshot[] = [];
 
   constructor(
-    private readonly save: GameSaveV5,
+    private readonly save: GameSaveV6,
     private readonly character: LoadedCharacter,
     private readonly config: GameConfig,
     private readonly persist: () => void,
     private readonly onStart: () => void,
     private readonly onComplete: (form: WorldtchiForm, name: string) => void,
+    private readonly onSageStart: () => void,
+    private readonly onSageComplete: (id: SageCharacterId, name: string) => void,
   ) {
     character.model.traverse((node) => {
       if (!(node instanceof THREE.Mesh)) return;
@@ -31,12 +36,13 @@ export class EvolutionSystem {
         if (material instanceof THREE.MeshToonMaterial) this.materials.push({ material, color: material.color.clone(), emissive: material.emissive.clone() });
       }
     });
-    this.applyForm(save.currentCharacter);
+    this.applyForm(this.getWorldForm());
   }
 
   update(dt: number): void {
     if (!this.active) {
       if (this.save.evolutionStage === 1 && this.save.careCount >= this.config.evolution.stage2CareCount) this.begin();
+      else if (this.save.evolutionStage === 2 && this.save.careCount >= this.config.evolution.stage3CareCount) this.beginSage();
       return;
     }
     this.elapsed = Math.min(this.config.evolution.durationSeconds, this.elapsed + dt);
@@ -47,18 +53,29 @@ export class EvolutionSystem {
     this.character.visualPivot.scale.setScalar(pulse * finalScale);
     if (this.targetForm) this.applyMaterial(this.targetForm, reveal);
     if (progress >= 1 && this.targetForm) this.complete(this.targetForm);
+    else if (progress >= 1 && this.targetSage) this.completeSage(this.targetSage);
   }
 
-  getCurrentName(): string { return FORM_APPEARANCE[this.save.currentCharacter].name; }
+  getCurrentName(): string { return FORM_APPEARANCE[this.getWorldForm()].name; }
 
   private begin(): void {
     const history = this.save.history;
     const calm = Object.entries(this.config.evolution.calmWeights).reduce((score, [key, weight]) => score + history[key as keyof typeof history] * weight, 0);
     const active = Object.entries(this.config.evolution.activeWeights).reduce((score, [key, weight]) => score + history[key as keyof typeof history] * weight, 0);
     this.targetForm = calm >= active ? 'white-worldtchi' : 'black-worldtchi';
+    this.targetSage = null;
     this.active = true;
     this.elapsed = 0;
     this.onStart();
+  }
+
+  private beginSage(): void {
+    const branch = this.getWorldForm() === 'white-worldtchi' ? 'white' : 'black';
+    this.targetForm = null;
+    this.targetSage = selectSageEvolution(branch, this.save.history);
+    this.active = true;
+    this.elapsed = 0;
+    this.onSageStart();
   }
 
   private complete(form: Exclude<WorldtchiForm, 'worldtchi'>): void {
@@ -68,6 +85,16 @@ export class EvolutionSystem {
     this.applyForm(form);
     this.persist();
     this.onComplete(form, FORM_APPEARANCE[form].name);
+  }
+
+  private completeSage(entry: SageEvolutionEntry): void {
+    this.active = false;
+    this.targetSage = null;
+    this.save.currentCharacter = entry.id;
+    this.save.evolutionStage = 3;
+    if (!this.save.encyclopedia.includes(entry.id)) this.save.encyclopedia.push(entry.id);
+    this.persist();
+    this.onSageComplete(entry.id, entry.name);
   }
 
   private applyForm(form: WorldtchiForm): void {
@@ -84,5 +111,9 @@ export class EvolutionSystem {
       snapshot.material.userData.baseEmissiveIntensity = intensity;
       snapshot.material.emissiveIntensity = intensity;
     }
+  }
+
+  private getWorldForm(): WorldtchiForm {
+    return this.save.currentCharacter === 'white-worldtchi' || this.save.currentCharacter === 'black-worldtchi' ? this.save.currentCharacter : 'worldtchi';
   }
 }

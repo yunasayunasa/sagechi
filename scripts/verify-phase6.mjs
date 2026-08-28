@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import { SAGE_EVOLUTIONS, selectSageEvolution } from '../src/evolution/sage-evolution-config.ts';
+
+const emptyHistory = { calm: 0, active: 0, sweet: 0, healthy: 0, meat: 0, playBall: 0, playRattle: 0, playBook: 0, affection: 0, stress: 0, sickCount: 0, careSuccess: 0, careDelay: 0 };
+const pick = (branch, values) => selectSageEvolution(branch, { ...emptyHistory, ...values }).id;
+
+assert.equal(SAGE_EVOLUTIONS.length, 10);
+assert.equal(new Set(SAGE_EVOLUTIONS.map((entry) => entry.id)).size, 10);
+assert.equal(SAGE_EVOLUTIONS.filter((entry) => entry.branch === 'white').length, 5);
+assert.equal(SAGE_EVOLUTIONS.filter((entry) => entry.branch === 'black').length, 5);
+assert.equal(pick('white', { sweet: 10 }), 'maria-theresa');
+assert.equal(pick('white', { careSuccess: 10 }), 'caim');
+assert.equal(pick('white', { playRattle: 10 }), 'lobelia');
+assert.equal(pick('white', { healthy: 10 }), 'alanaan');
+assert.equal(pick('white', { playBook: 10 }), 'haaselia');
+assert.equal(pick('black', { meat: 10 }), 'borghan');
+assert.equal(pick('black', { careDelay: 10 }), 'catzelia');
+assert.equal(pick('black', { playBall: 10 }), 'fraux');
+assert.equal(pick('black', { affection: 10 }), 'nier');
+assert.equal(pick('black', { playBook: 10 }), 'estarriola');
+process.stdout.write('Phase 6 evolution routes: 10 / 10 reachable\n');

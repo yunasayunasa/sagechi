@@ -1,6 +1,6 @@
 # 賢者っち
 
-スマートフォン向け3D育成ゲーム「賢者っち」の本番プロジェクトです。現在は **Phase 1〜Phase 5** を実装しています。本物のワールドっちGLBがのんびり生活し、直接操作とお世話の傾向によって白／黒ワールドっちへ進化します。賢者っち10体は共通のWalking Character基盤で読み込み・自律歩行・Reactionを確認できます。
+スマートフォン向け3D育成ゲーム「賢者っち」の本番プロジェクトです。現在は **Phase 1〜Phase 6** を実装しています。本物のワールドっちGLBがのんびり生活し、直接操作とお世話の傾向によって白／黒ワールドっち、さらに10種類の賢者っちへ進化します。発見した姿は図鑑へ保存されます。
 
 背景はCC0 AssetとThree.js Geometryを組み合わせた **夏の庭・子供部屋・和室** の3ステージを実装しています。下部のマップボタンから切り替えられ、選択したステージは端末に保存されます。
 
@@ -40,6 +40,9 @@ npm run analyze:worldtchi
 - 元GLBは変更しない
 - 賢者っち10体: `public/models/sages/`
 - モデル参照、Scale、Material方式、Controller種別、Hit Areaは `src/characters/character-config.ts`
+- 10体の原本は `assets/source-models/`、意味名対応表は `assets/animation-maps/`
+- `npm run prepare:sages` で全原本から意味名付き派生GLBを再生成できる
+- ゲームで使用する主要Clipは `idle / walk / happy / ok / lookAround / angry / sad / cry / fear`。目視で意味を確定していない未使用Clipは誤分類を避けて `unclassifiedXX` と明記する
 
 解析記録は `docs/worldtchi-analysis.md` と `docs/sage-character-audit.md` にあります。
 
@@ -53,7 +56,7 @@ npm run analyze:worldtchi
 - Floating / Pulse / Glow / Reaction
 - Tap / Pet / PickUp / CameraのGesture閾値
 - ステータス変化速度、オネダリ間隔・判定閾値、育成効果
-- 白黒進化の必要お世話回数、Calm／Active判定Weight、演出時間、進化後Scale
+- 白黒／賢者っち進化の必要お世話回数、育成履歴Weight、演出時間、進化後Scale
 - Save key / schema version / Debug初期値
 
 ## Debug Mode
@@ -98,6 +101,8 @@ npm run analyze:worldtchi
 - `care/CareSystem`: ステータス時間進行、オネダリ、育成効果・履歴
 - `care/CareUI`: ステータスゲージ、お世話メニュー、オネダリ表示
 - `evolution/EvolutionSystem`: 白黒の総合判定、Toon外観差分、進化演出・復元
+- `evolution/sage-evolution-config`: 白／黒各5体の進化候補、重み、説明、非数値ヒント
+- `encyclopedia/EncyclopediaUI`: 発見保存、未発見表示、発見済み本番GLBの3D閲覧
 - `stages/StageAssetManager`: GLB Cache、共有Resource、Toon変換
 - `stages/StageLoader`: Stage ConfigからAsset・Geometry・Interest Pointを構築
 - `stages/*-stage`: 3ステージの配置、軽量Collision、Interest Metadata
@@ -112,7 +117,8 @@ npm run analyze:worldtchi
 - Phase 3: 育成 — 完了
 - Phase 4: 白黒進化 — 完了
 - Phase 5: 賢者っち共通基盤・10体Asset導入 — 完了
-- Phase 6以降: 未着手
+- Phase 6: 10種類の進化条件・図鑑 — 完了
+- Phase 7以降: 未着手
 
 ## Phase 3の時間と保存
 
@@ -121,6 +127,7 @@ npm run analyze:worldtchi
 - 復帰時に巨大deltaや閉じていた時間を反映しない
 - ステータス、育成履歴、対応回数、設定をLocalStorageへ定期保存
 - 現在の進化段階と白／黒形態を保存し、再起動時は演出なしで復元
+- 賢者っちへの進化形態と発見済み図鑑をSave schema V6で保存
 - ブラウザデータ削除時の消失は仕様として許容
 
 ## Phase 4の白黒進化
@@ -130,6 +137,15 @@ npm run analyze:worldtchi
 - 白は明るいEmissive、黒は暗いToon Colorとして同じ本番GLBへランタイム適用
 - 両形態とも約8%大きく表示し、元GLBは変更しない
 - 白＝善、黒＝悪ではなく、穏やか／活発の育成個性として扱う
+
+## Phase 6の賢者っち進化・図鑑
+
+- 白ワールドっちから5体、黒ワールドっちから5体へ進化
+- 初期調整値は白黒進化後さらに5回、合計8回のお世話
+- 食事・遊び・愛情・ストレス・お世話成功／保留など複数履歴の重み付き総合判定
+- 正確なWeightや数値条件はUIに表示せず、図鑑では言葉による育成ヒントだけを表示
+- 発見済みは名前・説明・本番GLBの3D表示、未発見はシルエット・？？？・進化ヒント
+- Phase 7の病気・看病は未実装
 
 ## 背景進行状況
 

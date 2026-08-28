@@ -15,5 +15,11 @@ for (const id of expected) {
     offset += 8 + length;
   }
   if (!json?.meshes?.length || !json?.animations?.length || !json?.skins?.length) throw new Error(`Mesh / Skin / Animationが不足しています: ${file}`);
+  const mapping = JSON.parse(fs.readFileSync(path.resolve('assets/animation-maps', `${id}.json`), 'utf8'));
+  const actualNames = json.animations.map((animation) => animation.name).sort();
+  const expectedNames = Object.values(mapping).sort();
+  if (new Set(actualNames).size !== actualNames.length || JSON.stringify(actualNames) !== JSON.stringify(expectedNames)) {
+    throw new Error(`${id}のAnimation名が正規化されていません: ${actualNames.join(', ')}`);
+  }
   process.stdout.write(`${id}: ${json.meshes.length} mesh / ${json.skins.length} skin / ${json.animations.length} animations\n`);
 }

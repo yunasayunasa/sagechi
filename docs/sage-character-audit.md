@@ -1,6 +1,6 @@
 # Phase 5 賢者っちAsset監査
 
-元GLBは変更せず `public/models/sages/` へ配置し、ゲーム実行時にScale補正、Toon変換、Animation意味名Mapping、歩行ClipのRoot Motion除去を行う。
+元GLBは `assets/source-models/` に保持する。`public/models/sages/` にはAnimationClipだけを意味名へ正規化した派生GLBを配置し、ゲーム実行時にScale補正、Toon変換、歩行ClipのRoot Motion除去を行う。Geometry、Texture、Rig、Animation Trackは変更しない。
 
 | キャラクター | Triangle | Mesh | Material | Bone | Animation | Texture |
 |---|---:|---:|---:|---:|---:|---|
@@ -13,6 +13,8 @@
 | カッツェリーラ | 19,386 | 1 | 1 | 41 | 11 | 1×1024² |
 | フラウ | 19,248 | 1 | 1 | 41 | 9 | 3×1024² |
 | ニーア | 18,862 | 1 | 1 | 41 | 9 | 3×2048² |
+
+全10体を再利用できるよう、主要AnimationClip名を `idle / walk / happy / ok / lookAround / angry / sad / cry / fear` へ正規化している。変換表は `assets/animation-maps/<id>.json`。意味を目視確定していないゲーム未使用Clipは、誤った意味名を付けず `unclassifiedXX` として残す。
 | エスタリオラ | 19,546 | 1 | 1 | 41 | 11 | 1×1024² |
 
 全モデルがSkinnedMeshで、Phase 5の想定値（約2万Triangle、約41 Bone、複数Animation）内。Raw Clip名は `NlaTrack...` のため、`character-config.ts` で意味名へ変換し、ゲームロジックはRaw Clip名を参照しない。

@@ -40,11 +40,11 @@ export const GAME_CONFIG = Object.freeze({
     saveIntervalSeconds: 5,
   },
   evolution: {
-    stage2CareCount: 3, durationSeconds: 3.2, scale: 1.08,
+    stage2CareCount: 3, stage3CareCount: 8, durationSeconds: 3.2, scale: 1.08,
     calmWeights: { calm: 1, affection: 0.8, healthy: 0.5, playBook: 0.5, careSuccess: 0.1 },
     activeWeights: { active: 1, playBall: 0.5, playRattle: 0.25, careDelay: 1.2, stress: 0.5, meat: 0.25 },
   },
-  save: { key: 'sagechi.phase12.save', schemaVersion: 5 },
+  save: { key: 'sagechi.phase12.save', schemaVersion: 6 },
   debug: { enabledByDefault: false },
 });
 export type GameConfig = typeof GAME_CONFIG;

@@ -1,0 +1,11 @@
+{
+  "NlaTrack.006": "idle",
+  "NlaTrack.001": "walk",
+  "NlaTrack.005": "happy",
+  "NlaTrack.002": "ok",
+  "NlaTrack.008": "lookAround",
+  "NlaTrack": "angry",
+  "NlaTrack.004": "sad",
+  "NlaTrack.003": "cry",
+  "NlaTrack.007": "fear"
+}
