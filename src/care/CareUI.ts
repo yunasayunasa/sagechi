@@ -1,5 +1,6 @@
 import type { CareEvent, CareSystem } from './CareSystem';
 import type { FoodChoice, PlayChoice, RequestType } from './care-types';
+import { getStatusDisplayValues } from './status-display';
 
 const labels: Record<RequestType, { icon: string; text: string }> = {
   food: { icon: '🍽️', text: 'なにか食べたいな' },
@@ -34,11 +35,14 @@ export class CareUI {
   };
 
   private renderStatus(): void {
-    const status = this.care.save.status;
-    const values = { hunger: status.hunger, sleepiness: status.sleepiness, boredom: status.boredom, mood: status.mood, stress: status.stress, health: status.health };
+    const values = getStatusDisplayValues(this.care.save.status);
     for (const [key, value] of Object.entries(values)) {
-      const bar = document.querySelector<HTMLElement>(`[data-status="${key}"] .status-fill`);
-      if (bar) bar.style.width = `${Math.round(value)}%`;
+      const row = document.querySelector<HTMLElement>(`[data-status="${key}"]`);
+      const bar = row?.querySelector<HTMLElement>('.status-fill');
+      if (!row || !bar) continue;
+      const percent = Math.round(value);
+      bar.style.width = `${percent}%`;
+      row.setAttribute('aria-valuenow', String(percent));
     }
   }
 

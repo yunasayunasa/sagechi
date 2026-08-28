@@ -11,12 +11,12 @@
       <canvas id="game-canvas" aria-label="キャラクターが暮らす3D空間"></canvas>
       <header class="title-card"><small id="phase-label">PHASE 8 / SUMMER GARDEN</small><h1 id="character-name">ワールドっち</h1></header>
       <section class="status-card" aria-label="キャラクターの状態">
-        <div data-status="hunger"><span>🍽️ 空腹</span><i><b class="status-fill"></b></i></div>
-        <div data-status="sleepiness"><span>💤 眠気</span><i><b class="status-fill"></b></i></div>
-        <div data-status="boredom"><span>🧸 退屈</span><i><b class="status-fill"></b></i></div>
-        <div data-status="mood" class="good"><span>💗 機嫌</span><i><b class="status-fill"></b></i></div>
-        <div data-status="stress"><span>💭 ストレス</span><i><b class="status-fill"></b></i></div>
-        <div data-status="health" class="good"><span>🌿 健康</span><i><b class="status-fill"></b></i></div>
+        <div data-status="hunger" role="meter" aria-label="おなか" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span>🍽️ おなか</span><i><b class="status-fill"></b></i></div>
+        <div data-status="sleepiness" role="meter" aria-label="元気" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span>✨ 元気</span><i><b class="status-fill"></b></i></div>
+        <div data-status="boredom" role="meter" aria-label="楽しさ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span>🧸 楽しさ</span><i><b class="status-fill"></b></i></div>
+        <div data-status="mood" role="meter" aria-label="機嫌" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span>💗 機嫌</span><i><b class="status-fill"></b></i></div>
+        <div data-status="stress" role="meter" aria-label="安心" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span>🌿 安心</span><i><b class="status-fill"></b></i></div>
+        <div data-status="health" role="meter" aria-label="健康" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span>🩺 健康</span><i><b class="status-fill"></b></i></div>
       </section>
       <div id="loading" role="status"><span class="loader-orb"></span><b>キャラクターを呼んでいます</b></div>
       <div id="message" class="message" aria-live="polite">画面のこの子に触れてみてね</div>
