@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { GAME_CONFIG } from '../src/config/game-config.ts';
 import { getIllnessChance, nextIllnessStep, shouldStartIllness } from '../src/care/illness-rules.ts';
 
@@ -17,4 +18,16 @@ assert.equal(nextIllnessStep('rest'), 'meal');
 assert.equal(nextIllnessStep('meal'), null);
 assert.equal(GAME_CONFIG.evolution.juvenileScale, .7);
 assert.equal(GAME_CONFIG.save.schemaVersion, 9);
+
+const careSource = readFileSync(new URL('../src/care/CareSystem.ts', import.meta.url), 'utf8');
+assert.match(careSource, /vegetable: \{ hunger: -27, mood: 5, stress: -2 \}/);
+assert.match(careSource, /ball: \{ boredom: -34, mood: 12, stress: -3, sleepiness: 4 \}/);
+assert.match(careSource, /this\.adjust\(\{ sleepiness: -38, stress: -6, health: 4, mood: 3 \}\)/);
+assert.match(careSource, /this\.adjust\(\{ mood: 7, stress: -5, boredom: -3 \}\)/);
+const saveSource = readFileSync(new URL('../src/save/SaveService.ts', import.meta.url), 'utf8');
+assert.match(saveSource, /data\.schemaVersion === 8[\s\S]*schemaVersion: 9[\s\S]*illnessActive: false, illnessStep: null/);
+assert.match(saveSource, /status: \{ \.\.\.DEFAULT_STATUS, \.\.\.data\.status \}/);
+assert.match(saveSource, /history: \{ \.\.\.DEFAULT_HISTORY, \.\.\.data\.history \}/);
+assert.equal(GAME_CONFIG.evolution.activeSeconds, 120);
+assert.equal(GAME_CONFIG.evolution.careCount, 8);
 process.stdout.write('Phase 7 illness and juvenile scale rules: PASS\n');
