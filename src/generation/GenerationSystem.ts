@@ -1,10 +1,10 @@
 import { DEFAULT_HISTORY, DEFAULT_STATUS } from '../care/care-types';
 import type { GameConfig } from '../config/game-config';
-import type { GameSaveV9 } from '../save/SaveService';
+import type { GameSaveV10 } from '../save/SaveService';
 import { isEggReady } from './generation-rules';
 
 export class GenerationSystem {
-  constructor(private readonly save: GameSaveV9, private readonly config: GameConfig, private readonly persist: () => void, private readonly onEggAvailable: () => void) {}
+  constructor(private readonly save: GameSaveV10, private readonly config: GameConfig, private readonly persist: () => void, private readonly onEggAvailable: () => void) {}
 
   update(dt: number): void {
     if (this.save.evolutionStage !== 3 || this.save.eggAvailable) return;
@@ -38,6 +38,7 @@ export class GenerationSystem {
     this.save.adultCareCount = 0;
     this.save.eggAvailable = false;
     this.save.pendingRequest = null;
+    this.save.pendingRequestChoice = null;
     this.save.illnessActive = false;
     this.save.illnessStep = null;
     this.persist();

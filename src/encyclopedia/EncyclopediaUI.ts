@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { CharacterConfig, SageCharacterId } from '../characters/character-config';
 import { CharacterLoader, type LoadedCharacter } from '../characters/CharacterLoader';
-import type { GameSaveV9 } from '../save/SaveService';
+import type { GameSaveV10 } from '../save/SaveService';
 import { ENCYCLOPEDIA_ENTRIES } from '../evolution/sage-evolution-config';
 
 export class EncyclopediaUI {
@@ -18,7 +18,7 @@ export class EncyclopediaUI {
   private lastTime = 0;
   private loadingToken = 0;
 
-  constructor(private readonly save: GameSaveV9, private readonly configs: readonly CharacterConfig[], private readonly pixelRatioCap: number) {
+  constructor(private readonly save: GameSaveV10, private readonly configs: readonly CharacterConfig[], private readonly pixelRatioCap: number) {
     document.querySelector<HTMLButtonElement>('#encyclopedia-button')!.onclick = () => this.open();
     document.querySelector<HTMLButtonElement>('#encyclopedia-close')!.onclick = () => this.close();
     this.list.addEventListener('click', this.onListClick);

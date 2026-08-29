@@ -1,17 +1,19 @@
 import * as THREE from 'three';
 import type { GameConfig } from '../config/game-config';
-import type { GameSaveV9 } from '../save/SaveService';
-import type { FoodChoice, PlayChoice, RequestType } from './care-types';
+import type { GameSaveV10 } from '../save/SaveService';
+import type { CareRequestChoice, FoodChoice, PlayChoice, RequestType } from './care-types';
 import { shouldCreateTartRequest } from './care-rules';
+import { chooseRequestChoice, isExpectedChoice } from './care-request-rules';
 import { nextIllnessStep, shouldStartIllness } from './illness-rules';
 
-export type CareEvent = { kind: 'status' } | { kind: 'request'; request: RequestType | null } | { kind: 'reaction'; tone: 'happy' | 'calm' | 'delayed'; message: string; visualHandled?: boolean } | { kind: 'illness'; active: boolean } | { kind: 'care-complete' } | { kind: 'rare-evolution' };
+export type CareEvent = { kind: 'status' } | { kind: 'request'; request: RequestType | null } | { kind: 'reaction'; tone: 'happy' | 'calm' | 'delayed' | 'angry'; message: string; visualHandled?: boolean } | { kind: 'illness'; active: boolean } | { kind: 'care-complete' } | { kind: 'rare-evolution' };
 
 const clamp = (value: number) => THREE.MathUtils.clamp(value, 0, 100);
 const random = (min: number, max: number) => THREE.MathUtils.randFloat(min, max);
 
 export class CareSystem {
   request: RequestType | null;
+  requestChoice: CareRequestChoice | null;
   private requestClock = 0;
   private requestAt = 0;
   private saveClock = 0;
@@ -19,8 +21,9 @@ export class CareSystem {
   private illnessClock = 0;
   private readonly listeners = new Set<(event: CareEvent) => void>();
 
-  constructor(readonly save: GameSaveV9, private readonly config: GameConfig, private readonly persist: () => void, private readonly rng: () => number = Math.random) {
+  constructor(readonly save: GameSaveV10, private readonly config: GameConfig, private readonly persist: () => void, private readonly rng: () => number = Math.random) {
     this.request = save.illnessActive && save.illnessStep ? `sick-${save.illnessStep}` : save.pendingRequest;
+    this.requestChoice = save.pendingRequestChoice;
     this.scheduleRequest();
   }
 
@@ -57,9 +60,7 @@ export class CareSystem {
   feed(choice: FoodChoice): void {
     if (this.request === 'sick-meal') {
       if (choice !== 'vegetable') {
-        this.adjust(choice === 'sweet' ? { hunger: -22, mood: 5 } : { hunger: -30, mood: 3 });
-        this.persist();
-        this.emit({ kind: 'reaction', tone: 'delayed', message: '今は胃にやさしいものがよさそう。', visualHandled: true });
+        this.rejectChoice('体調が悪いのに、それは食べたくないみたい！');
         return;
       }
       this.adjust({ hunger: -27, health: 5, stress: -4 });
@@ -76,6 +77,7 @@ export class CareSystem {
       this.emit({ kind: 'rare-evolution' });
       return;
     }
+    if (this.request === 'food' && !isExpectedChoice(this.requestChoice, choice)) { this.rejectChoice('それじゃないみたい。ほしいものを選んであげよう。'); return; }
     const effects = {
       vegetable: { hunger: -27, mood: 5, stress: -2 },
       sweet: { hunger: -22, mood: 13, stress: -1 },
@@ -89,6 +91,7 @@ export class CareSystem {
   }
 
   play(choice: PlayChoice): void {
+    if (this.request === 'play' && !isExpectedChoice(this.requestChoice, choice)) { this.rejectChoice('今はその遊びじゃないみたい。'); return; }
     const effects = {
       ball: { boredom: -34, mood: 12, stress: -3, sleepiness: 4 },
       rattle: { boredom: -27, mood: 10, stress: -2 },
@@ -102,6 +105,7 @@ export class CareSystem {
   }
 
   rest(): void {
+    if (this.request && this.request !== 'sleep' && this.request !== 'sick-rest') { this.rejectChoice('今は眠りたいわけじゃないみたい。'); return; }
     this.adjust({ sleepiness: -38, stress: -6, health: 4, mood: 3 });
     this.save.history.calm += 2;
     if (this.request === 'sick-rest') { this.completeIllnessStep(); return; }
@@ -113,6 +117,16 @@ export class CareSystem {
     this.adjust({ stress: -5, health: 3, mood: 2 });
     this.save.history.calm += 1;
     this.completeIllnessStep();
+  }
+
+  cool(): void {
+    if (this.request !== 'sick-warm') return;
+    this.rejectChoice('寒いのに冷たくされて怒っている！');
+  }
+
+  wake(): void {
+    if (this.request !== 'sleep' && this.request !== 'sick-rest') return;
+    this.rejectChoice('眠いのに起こされて怒っている！');
   }
 
   pet(): void {
@@ -137,6 +151,8 @@ export class CareSystem {
     this.save.careCount += 1;
     this.request = null;
     this.save.pendingRequest = null;
+    this.requestChoice = null;
+    this.save.pendingRequestChoice = null;
     this.scheduleRequest();
     this.persist();
     this.emit({ kind: 'request', request: null });
@@ -148,6 +164,7 @@ export class CareSystem {
     if (this.save.illnessActive && this.save.illnessStep) {
       this.request = `sick-${this.save.illnessStep}`;
       this.save.pendingRequest = this.request;
+      this.setRequestChoice(this.choiceForRequest(this.request));
       this.persist();
       this.emit({ kind: 'request', request: this.request });
       return;
@@ -163,6 +180,7 @@ export class CareSystem {
     this.request = pool.find((item) => (pick -= item[1]) <= 0)?.[0] ?? 'pet';
     if (shouldCreateTartRequest(this.save, this.request, this.config.generation.rareTartChance, this.rng())) this.request = 'tart';
     this.save.pendingRequest = this.request;
+    this.setRequestChoice(this.choiceForRequest(this.request));
     this.persist();
     this.emit({ kind: 'request', request: this.request });
   }
@@ -172,6 +190,8 @@ export class CareSystem {
     this.save.careCount += 1;
     this.request = null;
     this.save.pendingRequest = null;
+    this.requestChoice = null;
+    this.save.pendingRequestChoice = null;
     this.scheduleRequest();
     this.persist();
     this.emit({ kind: 'request', request: null });
@@ -183,6 +203,7 @@ export class CareSystem {
     if (this.save.illnessActive) return;
     this.request = 'tart';
     this.save.pendingRequest = 'tart';
+    this.setRequestChoice('tart');
     this.persist();
     this.emit({ kind: 'request', request: 'tart' });
   }
@@ -192,6 +213,8 @@ export class CareSystem {
   resetForGeneration(): void {
     this.request = null;
     this.save.pendingRequest = null;
+    this.requestChoice = null;
+    this.save.pendingRequestChoice = null;
     this.save.illnessActive = false;
     this.save.illnessStep = null;
     this.illnessClock = 0;
@@ -201,8 +224,8 @@ export class CareSystem {
     this.emit({ kind: 'request', request: null });
   }
 
-  private adjust(values: Partial<Record<keyof GameSaveV9['status'], number>>): void {
-    for (const key of Object.keys(values) as Array<keyof GameSaveV9['status']>) this.save.status[key] = clamp(this.save.status[key] + (values[key] ?? 0));
+  private adjust(values: Partial<Record<keyof GameSaveV10['status'], number>>): void {
+    for (const key of Object.keys(values) as Array<keyof GameSaveV10['status']>) this.save.status[key] = clamp(this.save.status[key] + (values[key] ?? 0));
     this.emit({ kind: 'status' });
   }
 
@@ -212,6 +235,7 @@ export class CareSystem {
     this.save.history.sickCount += 1;
     this.request = 'sick-warm';
     this.save.pendingRequest = this.request;
+    this.setRequestChoice('warm');
     this.adjust({ health: -12, mood: -6, stress: 5 });
     this.persist();
     this.emit({ kind: 'request', request: this.request });
@@ -227,12 +251,14 @@ export class CareSystem {
     if (next) {
       this.save.illnessStep = next;
       this.request = `sick-${next}`;
+      this.setRequestChoice(this.choiceForRequest(this.request));
       const message = next === 'rest' ? 'あたたまって、少し眠くなったみたい。' : 'よく休めたら、おなかが空いてきたみたい。';
       this.emit({ kind: 'reaction', tone: 'calm', message, visualHandled: true });
     } else {
       this.save.illnessActive = false;
       this.save.illnessStep = null;
       this.request = null;
+      this.requestChoice = null;
       this.illnessClock = 0;
       this.adjust({ health: 18, stress: -15, mood: 10 });
       this.emit({ kind: 'illness', active: false });
@@ -240,6 +266,7 @@ export class CareSystem {
       this.scheduleRequest();
     }
     this.save.pendingRequest = this.request;
+    this.save.pendingRequestChoice = this.requestChoice;
     this.persist();
     this.emit({ kind: 'request', request: this.request });
   }
@@ -247,6 +274,21 @@ export class CareSystem {
   private scheduleRequest(): void {
     this.requestClock = 0;
     this.requestAt = random(this.config.care.requestMinSeconds, this.config.care.requestMaxSeconds);
+  }
+
+  private choiceForRequest(request: RequestType): CareRequestChoice | null {
+    return chooseRequestChoice(request, this.rng());
+  }
+
+  private setRequestChoice(choice: CareRequestChoice | null): void {
+    this.requestChoice = choice;
+    this.save.pendingRequestChoice = choice;
+  }
+
+  private rejectChoice(message: string): void {
+    this.adjust({ stress: 3, mood: -2 });
+    this.persist();
+    this.emit({ kind: 'reaction', tone: 'angry', message });
   }
 
   private emit(event: CareEvent): void { this.listeners.forEach((listener) => listener(event)); }

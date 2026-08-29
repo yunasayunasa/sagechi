@@ -21,7 +21,7 @@
 
 ## Material判断
 
-元MaterialはMetallic 0 / Roughness 0.9で過度なPBR光沢はない。一方、完成ゲームのToon方針、発光リアクション、将来の賢者っちとの共通化を優先し、BaseColor Textureを複製・維持した `MeshToonMaterial` へ実行時変換する。元GLBには手を加えない。
+元MaterialはMetallic 0 / Roughness 0.9。ワールドっち、白ワールドっち、黒ワールドっちは球体表面の艶を強めるため、BaseColor Textureを維持した `MeshStandardMaterial`（Roughness 0.24 / Metalness 0.08）へ実行時変換する。賢者っちは従来どおりToon表示とし、元GLBには手を加えない。
 
 ## 結論
 

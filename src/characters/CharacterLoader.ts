@@ -11,7 +11,7 @@ export class CharacterLoader {
     catch (cause) { throw new Error(`GLBの読み込みに失敗しました: ${config.glbPath}`, { cause }); }
     const root = new THREE.Group(), visualPivot = new THREE.Group(), model = gltf.scene;
     const ownedMaterials = new Set<THREE.Material>(), ownedTextures = new Set<THREE.Texture>(); root.name = `${config.id}-root`; visualPivot.name = `${config.id}-visual-pivot`; root.add(visualPivot); visualPivot.add(model);
-    model.traverse((node) => { if (!(node instanceof THREE.Mesh)) return; node.castShadow = false; node.receiveShadow = false; if (config.materialMode === 'toon') node.material = this.toon(node.material, ownedMaterials, ownedTextures); });
+    model.traverse((node) => { if (!(node instanceof THREE.Mesh)) return; node.castShadow = false; node.receiveShadow = false; if (config.materialMode === 'toon') node.material = this.toon(node.material, ownedMaterials, ownedTextures); else if (config.materialMode === 'glossy') node.material = this.glossy(node.material, ownedMaterials, ownedTextures); });
     const initial = new THREE.Box3().setFromObject(model), height = initial.max.y - initial.min.y;
     if (!Number.isFinite(height) || height <= 0) throw new Error('GLBのBoundingBoxを取得できません。');
     model.scale.setScalar(config.targetHeight / height); model.updateMatrixWorld(true);
@@ -41,5 +41,22 @@ export class CharacterLoader {
   private toonOne(source: THREE.Material, materials: Set<THREE.Material>, textures: Set<THREE.Texture>): THREE.MeshToonMaterial {
     const standard = source as THREE.MeshStandardMaterial, map = standard.map?.clone() ?? null; if (map) { map.colorSpace = THREE.SRGBColorSpace; map.needsUpdate = true; textures.add(map); }
     const material = new THREE.MeshToonMaterial({ color: standard.color?.clone() ?? new THREE.Color(0xffffff), map, transparent: source.transparent, opacity: source.opacity, side: source.side, alphaTest: source.alphaTest, emissive: standard.emissive?.clone() ?? new THREE.Color(0x07120c), emissiveIntensity: 0 }); materials.add(material); return material;
+  }
+  private glossy(source: THREE.Material | THREE.Material[], materials: Set<THREE.Material>, textures: Set<THREE.Texture>): THREE.Material | THREE.Material[] {
+    if (Array.isArray(source)) return source.map((material) => this.glossyOne(material, materials, textures));
+    return this.glossyOne(source, materials, textures);
+  }
+  private glossyOne(source: THREE.Material, materials: Set<THREE.Material>, textures: Set<THREE.Texture>): THREE.MeshStandardMaterial {
+    const standard = source as THREE.MeshStandardMaterial, map = standard.map ?? null;
+    if (map) { map.colorSpace = THREE.SRGBColorSpace; textures.add(map); }
+    const material = new THREE.MeshStandardMaterial({
+      color: standard.color?.clone() ?? new THREE.Color(0xffffff), map,
+      roughness: .24, metalness: .08, envMapIntensity: 1.35,
+      transparent: source.transparent, opacity: source.opacity, side: source.side, alphaTest: source.alphaTest,
+      emissive: standard.emissive?.clone() ?? new THREE.Color(0x07120c), emissiveIntensity: 0,
+    });
+    material.userData.baseEmissiveIntensity = 0;
+    materials.add(material);
+    return material;
   }
 }

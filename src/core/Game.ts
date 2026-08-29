@@ -100,7 +100,7 @@ export class Game {
       if (event.kind !== 'reaction' || event.visualHandled) return;
       if (event.tone === 'happy') this.controller?.pet();
       else if (event.tone === 'calm') this.controller?.tap(this.camera.position);
-      else this.controller?.delayReaction();
+      else this.controller?.delayReaction(event.tone === 'angry' ? 'angry' : undefined);
     });
     this.debug = new DebugHud(document.querySelector('#debug-hud')!, document.querySelector('#debug-controls')!, this.renderer, this.controller!, this.input);
     this.bindUi();

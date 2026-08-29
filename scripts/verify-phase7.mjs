@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { GAME_CONFIG } from '../src/config/game-config.ts';
+import { chooseRequestChoice, isExpectedChoice } from '../src/care/care-request-rules.ts';
 import { getIllnessChance, nextIllnessStep, shouldStartIllness } from '../src/care/illness-rules.ts';
 
 const healthy = { hunger: 20, sleepiness: 20, boredom: 20, mood: 80, stress: 10, health: 90 };
@@ -17,7 +18,20 @@ assert.equal(nextIllnessStep('warm'), 'rest');
 assert.equal(nextIllnessStep('rest'), 'meal');
 assert.equal(nextIllnessStep('meal'), null);
 assert.equal(GAME_CONFIG.evolution.juvenileScale, .7);
-assert.equal(GAME_CONFIG.save.schemaVersion, 9);
+assert.equal(GAME_CONFIG.save.schemaVersion, 10);
+const characterConfigSource = readFileSync(new URL('../src/characters/character-config.ts', import.meta.url), 'utf8');
+assert.match(characterConfigSource, /id: 'worldtchi'[\s\S]*materialMode: 'glossy'/);
+const loaderSource = readFileSync(new URL('../src/characters/CharacterLoader.ts', import.meta.url), 'utf8');
+assert.match(loaderSource, /new THREE\.MeshStandardMaterial/);
+assert.match(loaderSource, /roughness: \.24, metalness: \.08/);
+assert.equal(chooseRequestChoice('food', 0), 'vegetable');
+assert.equal(chooseRequestChoice('food', .5), 'sweet');
+assert.equal(chooseRequestChoice('food', .999), 'meat');
+assert.equal(chooseRequestChoice('play', .999), 'book');
+assert.equal(chooseRequestChoice('sick-warm', .5), 'warm');
+assert.equal(chooseRequestChoice('sick-meal', .5), 'vegetable');
+assert.equal(isExpectedChoice('meat', 'meat'), true);
+assert.equal(isExpectedChoice('meat', 'vegetable'), false);
 
 const careSource = readFileSync(new URL('../src/care/CareSystem.ts', import.meta.url), 'utf8');
 assert.match(careSource, /vegetable: \{ hunger: -27, mood: 5, stress: -2 \}/);
@@ -25,7 +39,9 @@ assert.match(careSource, /ball: \{ boredom: -34, mood: 12, stress: -3, sleepines
 assert.match(careSource, /this\.adjust\(\{ sleepiness: -38, stress: -6, health: 4, mood: 3 \}\)/);
 assert.match(careSource, /this\.adjust\(\{ mood: 7, stress: -5, boredom: -3 \}\)/);
 const saveSource = readFileSync(new URL('../src/save/SaveService.ts', import.meta.url), 'utf8');
-assert.match(saveSource, /data\.schemaVersion === 8[\s\S]*schemaVersion: 9[\s\S]*illnessActive: false, illnessStep: null/);
+assert.match(saveSource, /data\.schemaVersion === 8[\s\S]*schemaVersion: 10[\s\S]*illnessActive: false, illnessStep: null/);
+assert.match(saveSource, /data\.schemaVersion !== 9 && data\.schemaVersion !== 10/);
+assert.match(saveSource, /pendingRequestChoice/);
 assert.match(saveSource, /status: \{ \.\.\.DEFAULT_STATUS, \.\.\.data\.status \}/);
 assert.match(saveSource, /history: \{ \.\.\.DEFAULT_HISTORY, \.\.\.data\.history \}/);
 assert.equal(GAME_CONFIG.evolution.activeSeconds, 120);

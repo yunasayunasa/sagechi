@@ -95,7 +95,7 @@ npm run analyze:worldtchi
 ## Architecture
 
 - `core/Game`: Scene、Renderer、Loop、Lifecycle、Stage組立
-- `characters/CharacterLoader`: GLB、Toon変換、Scale/中心補正、Dispose
+- `characters/CharacterLoader`: GLB、賢者っちのToon変換、ワールドっち系のGlossy PBR変換、Scale/中心補正、Dispose
 - `characters/FloatingCharacterController`: 浮遊、自律行動、Reaction、PickUp
 - `characters/WalkingCharacterController`: 賢者っちのIdle、自律歩行、旋回、Reaction、PickUp
 - `characters/AnimationController`: 意味名Animation、CrossFade、LoopOnce復帰、Root Motion除去
@@ -104,7 +104,7 @@ npm run analyze:worldtchi
 - `effects/EffectSystem`: 差し替え可能なHeart / Sparkle
 - `care/CareSystem`: ステータス時間進行、オネダリ、育成効果・履歴
 - `care/CareUI`: ステータスゲージ、お世話メニュー、オネダリ表示
-- `evolution/EvolutionSystem`: 白黒の総合判定、Toon外観差分、進化演出・復元
+- `evolution/EvolutionSystem`: 白黒の総合判定、Glossy PBR外観差分、進化演出・復元
 - `evolution/sage-evolution-config`: 白／黒各5体の進化候補、重み、説明、非数値ヒント
 - `encyclopedia/EncyclopediaUI`: 発見保存、未発見表示、発見済み本番GLBの3D閲覧
 - `generation/GenerationSystem`: 成人時間・お世話回数、卵、世代交代
@@ -113,7 +113,7 @@ npm run analyze:worldtchi
 - `stages/StageLoader`: Stage ConfigからAsset・Geometry・Interest Pointを構築
 - `stages/*-stage`: 3ステージの配置、軽量Collision、Interest Metadata
 - `stages/stage-registry`: ステージ切替用のConfig登録
-- `save/SaveService`: 育成・進化・病気・世代・卵・要求・図鑑、V1〜V9 Migration
+- `save/SaveService`: 育成・進化・病気・世代・卵・具体的な要求内容・図鑑、V1〜V10 Migration
 - `debug/DebugHud`: 開発情報と可視化
 
 ## 現在実装Phase
@@ -135,14 +135,14 @@ npm run analyze:worldtchi
 - 復帰時に巨大deltaや閉じていた時間を反映しない
 - ステータス、育成履歴、対応回数、設定をLocalStorageへ定期保存
 - 現在の進化段階と白／黒形態を保存し、再起動時は演出なしで復元
-- 賢者っちへの進化形態、段階別時間・お世話回数、病気・看病段階、世代、卵、保留中要求、発見済み図鑑をSave schema V9で保存
+- 賢者っちへの進化形態、段階別時間・お世話回数、病気・看病段階、世代、卵、保留中要求と希望内容、発見済み図鑑をSave schema V10で保存
 - ブラウザデータ削除時の消失は仕様として許容
 
 ## Phase 4の白黒進化
 
 - ワールドっちでフォアグラウンド2分かつお世話8回（Configから変更可能）
 - Calm、Affection、Healthy、Book等と、Active、Ball、Delay、Stress等を重み付きで総合判定
-- 白は明るいEmissive、黒は暗いToon Colorとして同じ本番GLBへランタイム適用
+- ワールドっち系は艶のあるMeshStandardMaterialを使い、白は明るいEmissive、黒は暗いColorとして同じ本番GLBへランタイム適用
 - 両形態とも約8%大きく表示し、元GLBは変更しない
 - 白＝善、黒＝悪ではなく、穏やか／活発の育成個性として扱う
 
@@ -156,6 +156,8 @@ npm run analyze:worldtchi
 - 病気はCare回数、ストレス、健康、あとでね履歴と確率から発生し、死亡や永久ペナルティはない
 - 看病は「あたためる→休ませる→野菜を与える」の連続イベント。間違いや「あとでね」でも同じ段階から再開可能
 - 病気中は移動・Animation・浮遊・発光が弱まり、回復後に通常生活へ戻る
+- 食事・遊びのおねだりは希望する品をアイコンで示し、別の品を選ぶと怒って要求を継続する
+- 看病にも「あたためる／冷やす」「休ませる／起こす」などのハズレ選択肢があり、間違えても死亡せず同じ段階からやり直せる
 - DEVの「病気を発生」で看病フローを即時確認可能
 
 ## Phase 8の卵・世代交代・レア進化

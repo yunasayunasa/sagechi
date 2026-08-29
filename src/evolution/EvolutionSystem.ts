@@ -2,11 +2,12 @@ import * as THREE from 'three';
 import type { LoadedCharacter } from '../characters/CharacterLoader';
 import type { SageCharacterId } from '../characters/character-config';
 import type { GameConfig } from '../config/game-config';
-import type { GameSaveV9, WorldtchiForm } from '../save/SaveService';
+import type { GameSaveV10, WorldtchiForm } from '../save/SaveService';
 import { hasMetProgressThresholds } from '../progression/progression-rules';
 import { selectSageEvolution, type SageEvolutionEntry } from './sage-evolution-config';
 
-type ToonSnapshot = { material: THREE.MeshToonMaterial; color: THREE.Color; emissive: THREE.Color };
+type WorldMaterial = THREE.MeshToonMaterial | THREE.MeshStandardMaterial;
+type MaterialSnapshot = { material: WorldMaterial; color: THREE.Color; emissive: THREE.Color };
 
 const FORM_APPEARANCE = {
   worldtchi: { name: 'ワールドっち', color: new THREE.Color(0xffffff), emissive: new THREE.Color(0x07120c), emissiveIntensity: 0 },
@@ -19,10 +20,10 @@ export class EvolutionSystem {
   private elapsed = 0;
   private targetForm: Exclude<WorldtchiForm, 'worldtchi'> | null = null;
   private targetSage: SageEvolutionEntry | null = null;
-  private readonly materials: ToonSnapshot[] = [];
+  private readonly materials: MaterialSnapshot[] = [];
 
   constructor(
-    private readonly save: GameSaveV9,
+    private readonly save: GameSaveV10,
     private readonly character: LoadedCharacter,
     private readonly config: GameConfig,
     private readonly persist: () => void,
@@ -34,7 +35,7 @@ export class EvolutionSystem {
     character.model.traverse((node) => {
       if (!(node instanceof THREE.Mesh)) return;
       for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
-        if (material instanceof THREE.MeshToonMaterial) this.materials.push({ material, color: material.color.clone(), emissive: material.emissive.clone() });
+        if (material instanceof THREE.MeshToonMaterial || material instanceof THREE.MeshStandardMaterial) this.materials.push({ material, color: material.color.clone(), emissive: material.emissive.clone() });
       }
     });
     this.applyForm(this.getWorldForm());

@@ -12,6 +12,11 @@ const labels: Record<RequestType, { icon: string; text: string }> = {
   'sick-rest': { icon: '🤒', text: 'ゆっくり休みたいみたい' },
   'sick-meal': { icon: '🥣', text: '胃にやさしいものが食べたいみたい' },
 };
+const choiceLabels = {
+  vegetable: { icon: '🥦', text: '野菜が食べたいみたい' }, sweet: { icon: '🍰', text: '甘いものが食べたいみたい' }, meat: { icon: '🍖', text: '肉が食べたいみたい' }, tart: { icon: '🥧', text: 'タルトが食べたいみたい' },
+  ball: { icon: '⚽', text: 'ボールで遊びたいみたい' }, rattle: { icon: '🪇', text: 'ガラガラで遊びたいみたい' }, book: { icon: '📖', text: '絵本を読んでほしいみたい' },
+  rest: { icon: '💤', text: 'ゆっくり休みたいみたい' }, warm: { icon: '🧣', text: 'あたためてほしいみたい' },
+} as const;
 
 export class CareUI {
   private readonly panel = document.querySelector<HTMLElement>('#care-panel')!;
@@ -52,19 +57,19 @@ export class CareUI {
   private renderRequest(request: RequestType | null): void {
     this.requestBubble.hidden = !request;
     if (!request) { this.close(); return; }
-    const label = labels[request];
-    this.requestBubble.querySelector<HTMLElement>('.request-icon')!.textContent = label.icon;
-    this.requestBubble.querySelector<HTMLElement>('.request-text')!.textContent = label.text;
+    const label = labels[request], choice = this.care.requestChoice ? choiceLabels[this.care.requestChoice] : null;
+    this.requestBubble.querySelector<HTMLElement>('.request-icon')!.textContent = choice ? `${label.icon}${choice.icon}` : label.icon;
+    this.requestBubble.querySelector<HTMLElement>('.request-text')!.textContent = choice?.text ?? label.text;
   }
 
   private openMain(): void { if (this.care.save.illnessActive) this.openForRequest(); else this.renderPanel('お世話', `<button data-menu="food">🍽️ 食事</button><button data-menu="play">🧸 遊び</button><button data-action="rest">💤 休む</button>`); }
   private openForRequest(): void {
     if (this.care.request === 'food' || this.care.request === 'tart' || this.care.request === 'sick-meal') this.openFood();
     else if (this.care.request === 'play') this.openPlay();
-    else if (this.care.request === 'sleep') this.renderPanel('眠そう…', `<button data-action="rest">🛏️ 休ませる</button><button class="later" data-action="delay">あとでね</button>`);
+    else if (this.care.request === 'sleep') this.renderPanel('眠そう…', `<button data-action="rest">🛏️ 休ませる</button><button data-action="wake">☀️ 起こす</button><button class="later" data-action="delay">あとでね</button>`);
     else if (this.care.request === 'pet') this.renderPanel('撫でてほしそう', `<p class="care-hint">${this.getCharacterName()}の上を指で撫でてね</p><button class="later" data-action="delay">あとでね</button>`);
-    else if (this.care.request === 'sick-warm') this.renderPanel('寒そう……', `<button data-action="warm">🧣 あたためる</button><button class="later" data-action="delay">あとでね</button>`);
-    else if (this.care.request === 'sick-rest') this.renderPanel('眠そう……', `<button data-action="rest">🛏️ 休ませる</button><button class="later" data-action="delay">あとでね</button>`);
+    else if (this.care.request === 'sick-warm') this.renderPanel('寒そう……', `<button data-action="warm">🧣 あたためる</button><button data-action="cool">🧊 冷やす</button><button class="later" data-action="delay">あとでね</button>`);
+    else if (this.care.request === 'sick-rest') this.renderPanel('眠そう……', `<button data-action="rest">🛏️ 休ませる</button><button data-action="wake">☀️ 起こす</button><button class="later" data-action="delay">あとでね</button>`);
   }
   private openFood(): void { this.renderPanel('なにを食べる？', `<button data-food="vegetable">🥦 野菜</button><button data-food="sweet">🍰 甘いもの</button><button data-food="meat">🍖 肉</button>${this.care.request === 'tart' ? '<button class="rare-food" data-food="tart">🥧 タルト</button>' : ''}${this.care.request ? '<button class="later" data-action="delay">あとでね</button>' : ''}`); }
   private openPlay(): void { this.renderPanel('なにして遊ぶ？', `<button data-play="ball">⚽ ボール</button><button data-play="rattle">🪇 ガラガラ</button><button data-play="book">📖 絵本</button>${this.care.request ? '<button class="later" data-action="delay">あとでね</button>' : ''}`); }
@@ -80,6 +85,8 @@ export class CareUI {
     if (button.dataset.play) { this.care.play(button.dataset.play as PlayChoice); this.close(); }
     if (button.dataset.action === 'rest') { this.care.rest(); this.close(); }
     if (button.dataset.action === 'warm') { this.care.warm(); this.close(); }
+    if (button.dataset.action === 'cool') { this.care.cool(); this.close(); }
+    if (button.dataset.action === 'wake') { this.care.wake(); this.close(); }
     if (button.dataset.action === 'delay') { this.care.delay(); this.close(); }
   };
 

@@ -40,7 +40,7 @@ export class WalkingCharacterController implements CharacterController {
     this.react(this.animation.has('ok') ? 'ok' : 'happy', 'sparkle');
   }
   pet(): void { if (this.state !== 'pickup') this.react('happy', 'heart'); }
-  delayReaction(): void { if (this.state !== 'pickup') this.react(chooseDelayReaction(Math.random()), 'none'); }
+  delayReaction(tone?: 'angry' | 'sad'): void { if (this.state !== 'pickup') this.react(tone ?? chooseDelayReaction(Math.random()), 'none'); }
   setSick(active: boolean): void {
     this.sick = active;
     this.character.model.traverse((node) => {

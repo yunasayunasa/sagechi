@@ -7,7 +7,7 @@ export interface CharacterController {
   update(dt: number): void;
   tap(cameraPosition: THREE.Vector3): void;
   pet(): void;
-  delayReaction(): void;
+  delayReaction(tone?: 'angry' | 'sad'): void;
   setSick(active: boolean): void;
   beginPickup(point: THREE.Vector3): void;
   movePickup(point: THREE.Vector3): void;
