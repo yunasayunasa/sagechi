@@ -34,6 +34,10 @@ assert.equal(isExpectedChoice('meat', 'meat'), true);
 assert.equal(isExpectedChoice('meat', 'vegetable'), false);
 
 const careSource = readFileSync(new URL('../src/care/CareSystem.ts', import.meta.url), 'utf8');
+assert.match(careSource, /if \(this\.save\.illnessActive\) \{\s*this\.dismissRequest\(\)/);
+assert.match(careSource, /private rejectChoice[\s\S]*this\.dismissRequest\(\)/);
+assert.match(careSource, /private dismissRequest[\s\S]*this\.scheduleRequest\(\)[\s\S]*kind: 'request', request: null/);
+assert.match(careSource, /if \(this\.save\.illnessActive && this\.save\.illnessStep\)/);
 assert.match(careSource, /vegetable: \{ hunger: -27, mood: 5, stress: -2 \}/);
 assert.match(careSource, /ball: \{ boredom: -34, mood: 12, stress: -3, sleepiness: 4 \}/);
 assert.match(careSource, /this\.adjust\(\{ sleepiness: -38, stress: -6, health: 4, mood: 3 \}\)/);

@@ -144,18 +144,12 @@ export class CareSystem {
     this.save.history.stress += 1;
     this.save.history.careDelay += 1;
     if (this.save.illnessActive) {
-      this.persist();
+      this.dismissRequest();
       this.emit({ kind: 'reaction', tone: 'delayed', message: 'まだつらそう。あとで看病してあげよう。' });
       return;
     }
     this.save.careCount += 1;
-    this.request = null;
-    this.save.pendingRequest = null;
-    this.requestChoice = null;
-    this.save.pendingRequestChoice = null;
-    this.scheduleRequest();
-    this.persist();
-    this.emit({ kind: 'request', request: null });
+    this.dismissRequest();
     this.emit({ kind: 'care-complete' });
     this.emit({ kind: 'reaction', tone: 'delayed', message: 'わかった、あとでね。' });
   }
@@ -287,8 +281,18 @@ export class CareSystem {
 
   private rejectChoice(message: string): void {
     this.adjust({ stress: 3, mood: -2 });
-    this.persist();
+    this.dismissRequest();
     this.emit({ kind: 'reaction', tone: 'angry', message });
+  }
+
+  private dismissRequest(): void {
+    this.request = null;
+    this.save.pendingRequest = null;
+    this.requestChoice = null;
+    this.save.pendingRequestChoice = null;
+    this.scheduleRequest();
+    this.persist();
+    this.emit({ kind: 'request', request: null });
   }
 
   private emit(event: CareEvent): void { this.listeners.forEach((listener) => listener(event)); }
