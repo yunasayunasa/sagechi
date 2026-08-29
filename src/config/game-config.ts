@@ -46,7 +46,7 @@ export const GAME_CONFIG = Object.freeze({
     activeWeights: { active: 1, playBall: .6, playRattle: .35, careDelay: 1.2, stress: .5, meat: .4 },
   },
   generation: { eggActiveSeconds: 120, eggCareCount: 8, rareTartChance: .05 },
-  save: { key: 'sagechi.phase12.save', schemaVersion: 11 },
+  save: { key: 'sagechi.phase12.save', schemaVersion: 12 },
   debug: { enabledByDefault: false },
 });
 export type GameConfig = typeof GAME_CONFIG;

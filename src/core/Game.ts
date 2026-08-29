@@ -33,7 +33,7 @@ export class Game {
   private readonly saveService = new SaveService(GAME_CONFIG.save.key);
   private readonly save = this.saveService.load();
   private readonly care = new CareSystem(this.save, GAME_CONFIG, () => this.saveService.save(this.save));
-  private readonly audio = new AudioService(this.save.settings.bgm, this.save.settings.se);
+  private readonly audio = new AudioService(this.save.settings.bgm, this.save.settings.se, this.save.settings.bgmTrack, this.save.settings.bgmVolume, this.save.settings.seVolume, `${import.meta.env.BASE_URL}audio/`);
   private readonly stageAssets = new StageAssetManager();
   private readonly stageLoader = new StageLoader(this.stageAssets);
   private stage: LoadedStage | null = null;
@@ -183,14 +183,23 @@ export class Game {
     document.querySelector<HTMLButtonElement>('#force-illness')!.onclick = () => this.care.forceIllness();
     const settingsPanel = document.querySelector<HTMLElement>('#settings-panel')!;
     const bgm = document.querySelector<HTMLInputElement>('#setting-bgm')!, se = document.querySelector<HTMLInputElement>('#setting-se')!;
-    bgm.checked = this.save.settings.bgm; se.checked = this.save.settings.se;
+    const bgmTrack = document.querySelector<HTMLSelectElement>('#setting-bgm-track')!, bgmVolume = document.querySelector<HTMLInputElement>('#setting-bgm-volume')!, seVolume = document.querySelector<HTMLInputElement>('#setting-se-volume')!;
+    bgm.checked = this.save.settings.bgm; se.checked = this.save.settings.se; bgmTrack.value = this.save.settings.bgmTrack; bgmVolume.value = String(Math.round(this.save.settings.bgmVolume * 100)); seVolume.value = String(Math.round(this.save.settings.seVolume * 100));
     document.querySelector<HTMLButtonElement>('#settings-button')!.onclick = () => { this.audio.play('ui'); settingsPanel.hidden = false; };
     document.querySelector<HTMLButtonElement>('#settings-close')!.onclick = () => { this.audio.play('ui'); settingsPanel.hidden = true; };
     bgm.onchange = () => { this.save.settings.bgm = bgm.checked; this.audio.setBgmEnabled(bgm.checked); this.saveService.save(this.save); };
     se.onchange = () => { this.save.settings.se = se.checked; this.audio.setSeEnabled(se.checked); this.audio.play('ui'); this.saveService.save(this.save); };
+    bgmTrack.onchange = () => { this.save.settings.bgmTrack = bgmTrack.value as typeof this.save.settings.bgmTrack; this.audio.setBgmTrack(this.save.settings.bgmTrack); this.saveService.save(this.save); };
+    bgmVolume.oninput = () => { this.save.settings.bgmVolume = Number(bgmVolume.value) / 100; this.audio.setBgmVolume(this.save.settings.bgmVolume); this.saveService.save(this.save); };
+    seVolume.oninput = () => { this.save.settings.seVolume = Number(seVolume.value) / 100; this.audio.setSeVolume(this.save.settings.seVolume); this.saveService.save(this.save); };
+    seVolume.onchange = () => this.audio.play('ui');
+    document.querySelector<HTMLButtonElement>('#restart-button')!.onclick = () => { if (confirm('図鑑・世代・設定を残して、幼年期のワールドっちから育て直しますか？')) void this.restartFromChild(); };
+    const statusCard = document.querySelector<HTMLElement>('.status-card')!, statusToggle = document.querySelector<HTMLButtonElement>('#status-toggle')!;
+    const renderStatusCollapsed = () => { statusCard.classList.toggle('collapsed', this.save.settings.statusCollapsed); statusToggle.ariaExpanded = String(!this.save.settings.statusCollapsed); statusToggle.querySelector<HTMLElement>('b')!.textContent = this.save.settings.statusCollapsed ? '＋' : '−'; };
+    statusToggle.onclick = () => { this.save.settings.statusCollapsed = !this.save.settings.statusCollapsed; renderStatusCollapsed(); this.saveService.save(this.save); }; renderStatusCollapsed();
     document.querySelector<HTMLButtonElement>('#evolution-close')!.onclick = () => { document.querySelector<HTMLElement>('#evolution-overlay')!.hidden = true; };
     const mapPanel = document.querySelector<HTMLElement>('#map-panel')!;
-    document.querySelector<HTMLButtonElement>('#map-button')!.onclick = () => { mapPanel.hidden = false; };
+    document.querySelector<HTMLButtonElement>('#map-button')!.onclick = () => { const willOpen = mapPanel.hidden; mapPanel.hidden = !willOpen; if (willOpen) document.querySelector<HTMLElement>('#care-panel')!.hidden = true; };
     document.querySelector<HTMLButtonElement>('#map-close')!.onclick = () => { mapPanel.hidden = true; };
     mapPanel.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach((stageButton) => { stageButton.onclick = () => void this.switchStage(stageButton.dataset.stage as StageId); });
     this.updateStageUi();
@@ -324,6 +333,28 @@ export class Game {
     } catch (error) {
       console.error(error);
       document.querySelector<HTMLElement>('#message')!.textContent = '卵から生まれる準備に失敗しました';
+    } finally {
+      loading.hidden = true; loading.textContent = 'お部屋を準備しています…'; this.switchingGeneration = false;
+    }
+  }
+
+  private async restartFromChild(): Promise<void> {
+    if (this.switchingGeneration) return;
+    this.switchingGeneration = true;
+    const loading = document.querySelector<HTMLElement>('#stage-loading')!;
+    const settingsPanel = document.querySelector<HTMLElement>('#settings-panel')!;
+    loading.textContent = '幼年期のワールドっちを呼んでいます…'; loading.hidden = false; settingsPanel.hidden = true;
+    try {
+      this.generation?.restartFromChild();
+      this.care.resetForGeneration();
+      this.eggView?.setAvailable(false);
+      await this.swapCharacter(WORLDTCCHI_CONFIG);
+      document.querySelector<HTMLSelectElement>('#character-preview')!.value = 'worldtchi';
+      document.querySelector<HTMLElement>('#message')!.textContent = '幼年期のワールドっちから育て直します';
+      this.effects.sparkle(this.character!.root.position.clone().add(new THREE.Vector3(0, 1.6, 0)));
+    } catch (error) {
+      console.error(error);
+      document.querySelector<HTMLElement>('#message')!.textContent = '育て直しの準備に失敗しました';
     } finally {
       loading.hidden = true; loading.textContent = 'お部屋を準備しています…'; this.switchingGeneration = false;
     }

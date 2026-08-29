@@ -26,7 +26,7 @@ export class CareUI {
   private unsubscribe: (() => void) | null = null;
 
   constructor(private readonly care: CareSystem, private readonly getCharacterName: () => string = () => 'この子') {
-    document.querySelector<HTMLButtonElement>('#care-button')!.onclick = () => this.openMain();
+    document.querySelector<HTMLButtonElement>('#care-button')!.onclick = () => { if (this.panel.hidden) this.openMain(); else this.close(); };
     document.querySelector<HTMLButtonElement>('#care-close')!.onclick = () => this.close();
     document.querySelector<HTMLButtonElement>('#request-open')!.onclick = () => this.openForRequest();
     this.panel.addEventListener('click', this.onPanelClick);
@@ -62,7 +62,7 @@ export class CareUI {
     this.requestBubble.querySelector<HTMLElement>('.request-text')!.textContent = choice?.text ?? label.text;
   }
 
-  private openMain(): void { if (this.care.save.illnessActive) this.openForRequest(); else this.renderPanel('お世話', `<button data-menu="food">🍽️ 食事</button><button data-menu="play">🧸 遊び</button><button data-action="rest">💤 休む</button>`); }
+  private openMain(): void { document.querySelector<HTMLElement>('#map-panel')!.hidden = true; if (this.care.save.illnessActive) this.openForRequest(); else this.renderPanel('お世話', `<button data-menu="food">🍽️ 食事</button><button data-menu="play">🧸 遊び</button><button data-action="rest">💤 休む</button>`); }
   private openForRequest(): void {
     if (this.care.request === 'food' || this.care.request === 'tart' || this.care.request === 'sick-meal') this.openFood();
     else if (this.care.request === 'play') this.openPlay();

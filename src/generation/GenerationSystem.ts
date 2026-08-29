@@ -27,6 +27,14 @@ export class GenerationSystem {
 
   beginNextGeneration(): void {
     this.save.generation += 1;
+    this.resetToChild();
+  }
+
+  restartFromChild(): void {
+    this.resetToChild();
+  }
+
+  private resetToChild(): void {
     this.save.currentCharacter = 'worldtchi';
     this.save.evolutionStage = 1;
     this.save.status = structuredClone(DEFAULT_STATUS);

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { GAME_CONFIG } from '../src/config/game-config.ts';
 
-assert.equal(GAME_CONFIG.save.schemaVersion, 11);
+assert.equal(GAME_CONFIG.save.schemaVersion, 12);
 const save = readFileSync(new URL('../src/save/SaveService.ts', import.meta.url), 'utf8');
-assert.match(save, /settings: \{ debug: false, bgm: true, se: true \}/);
-assert.match(save, /schemaVersion: 11/);
+assert.match(save, /bgmTrack: 'cafe', bgmVolume: \.55, seVolume: \.7, statusCollapsed: false/);
+assert.match(save, /schemaVersion: 12/);
 const audio = readFileSync(new URL('../src/audio/AudioService.ts', import.meta.url), 'utf8');
 for (const effect of ['tap', 'pet', 'request', 'happy', 'angry', 'sick', 'recover', 'evolution', 'egg', 'ui']) assert.match(audio, new RegExp(`${effect}:`));
 assert.match(audio, /document\.addEventListener\('pointerdown', this\.unlock/);
@@ -14,7 +14,11 @@ assert.match(audio, /pendingEffect/);
 assert.match(audio, /\.catch\(\(\) =>/);
 assert.match(audio, /pause\(\): void/);
 assert.match(audio, /resume\(\): void/);
+for (const track of ['cafe', 'battle', 'enzan']) assert.match(save, new RegExp(`'${track}'`));
+for (const track of ['cafe', 'battle', 'enzan']) assert.equal(existsSync(new URL(`../public/audio/${track}.mp3`, import.meta.url)), true);
 const game = readFileSync(new URL('../src/core/Game.ts', import.meta.url), 'utf8');
 assert.match(game, /this\.audio\.pause\(\)/);
 assert.match(game, /this\.audio\.resume\(\)/);
+assert.match(game, /restartFromChild/);
+assert.match(game, /statusCollapsed/);
 process.stdout.write('Phase 10 audio and settings foundation: PASS\n');

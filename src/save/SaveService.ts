@@ -14,9 +14,10 @@ export interface GameSaveV7 { schemaVersion: 7; currentCharacter: CurrentCharact
 export interface GameSaveV8 extends Omit<GameSaveV7, 'schemaVersion'> { schemaVersion: 8; stageActiveSeconds: number; stageCareCount: number }
 export interface GameSaveV9 extends Omit<GameSaveV8, 'schemaVersion'> { schemaVersion: 9; illnessActive: boolean; illnessStep: IllnessStep | null }
 export interface GameSaveV10 extends Omit<GameSaveV9, 'schemaVersion'> { schemaVersion: 10; pendingRequestChoice: CareRequestChoice | null }
-export interface GameSettings { debug: boolean; bgm: boolean; se: boolean }
-export interface GameSaveV11 extends Omit<GameSaveV10, 'schemaVersion' | 'settings'> { schemaVersion: 11; settings: GameSettings }
-const DEFAULT_SAVE: GameSaveV11 = { schemaVersion: 11, currentCharacter: 'worldtchi', evolutionStage: 1, map: 'summer-garden', status: DEFAULT_STATUS, history: DEFAULT_HISTORY, careCount: 0, encyclopedia: [], generation: 0, stageActiveSeconds: 0, stageCareCount: 0, adultActiveSeconds: 0, adultCareCount: 0, eggAvailable: false, pendingRequest: null, pendingRequestChoice: null, illnessActive: false, illnessStep: null, settings: { debug: false, bgm: true, se: true } };
+export type BgmTrack = 'cafe' | 'battle' | 'enzan';
+export interface GameSettings { debug: boolean; bgm: boolean; se: boolean; bgmTrack: BgmTrack; bgmVolume: number; seVolume: number; statusCollapsed: boolean }
+export interface GameSaveV11 extends Omit<GameSaveV10, 'schemaVersion' | 'settings'> { schemaVersion: 12; settings: GameSettings }
+const DEFAULT_SAVE: GameSaveV11 = { schemaVersion: 12, currentCharacter: 'worldtchi', evolutionStage: 1, map: 'summer-garden', status: DEFAULT_STATUS, history: DEFAULT_HISTORY, careCount: 0, encyclopedia: [], generation: 0, stageActiveSeconds: 0, stageCareCount: 0, adultActiveSeconds: 0, adultCareCount: 0, eggAvailable: false, pendingRequest: null, pendingRequestChoice: null, illnessActive: false, illnessStep: null, settings: { debug: false, bgm: true, se: true, bgmTrack: 'cafe', bgmVolume: .55, seVolume: .7, statusCollapsed: false } };
 const SAGE_IDS = new Set<string>(SAGE_CHARACTER_CONFIGS.map((config) => config.id));
 export const isSageCharacterId = (value: string): value is SageCharacterId => SAGE_IDS.has(value);
 export class SaveService {
@@ -32,10 +33,10 @@ export class SaveService {
     if (data.schemaVersion === 1) return { ...structuredClone(DEFAULT_SAVE), currentCharacter: data.currentCharacter ?? 'worldtchi', settings: { ...DEFAULT_SAVE.settings, ...data.settings } };
     if (data.schemaVersion === 2) return { ...structuredClone(DEFAULT_SAVE), status: { ...DEFAULT_STATUS, ...data.status }, history: { ...DEFAULT_HISTORY, ...data.history }, careCount: data.careCount ?? 0, settings: { ...DEFAULT_SAVE.settings, ...data.settings } };
     if (data.schemaVersion === 3) return { ...structuredClone(DEFAULT_SAVE), currentCharacter: data.currentCharacter ?? 'worldtchi', evolutionStage: data.evolutionStage ?? 1, status: { ...DEFAULT_STATUS, ...data.status }, history: { ...DEFAULT_HISTORY, ...data.history }, careCount: data.careCount ?? 0, settings: { ...DEFAULT_SAVE.settings, ...data.settings } };
-    if (data.schemaVersion === 4) return { ...structuredClone(DEFAULT_SAVE), ...data, schemaVersion: 11, map: 'summer-garden', encyclopedia: [], status: { ...DEFAULT_STATUS, ...data.status }, history: { ...DEFAULT_HISTORY, ...data.history }, settings: { ...DEFAULT_SAVE.settings, ...data.settings } } as GameSaveV11;
-    if (data.schemaVersion === 5 || data.schemaVersion === 6 || data.schemaVersion === 7) return { ...structuredClone(DEFAULT_SAVE), ...data, schemaVersion: 11, stageActiveSeconds: 0, stageCareCount: 0, status: { ...DEFAULT_STATUS, ...data.status }, history: { ...DEFAULT_HISTORY, ...data.history }, settings: { ...DEFAULT_SAVE.settings, ...data.settings } } as GameSaveV11;
-    if (data.schemaVersion === 8) return { ...structuredClone(DEFAULT_SAVE), ...data, schemaVersion: 11, illnessActive: false, illnessStep: null, status: { ...DEFAULT_STATUS, ...data.status }, history: { ...DEFAULT_HISTORY, ...data.history }, settings: { ...DEFAULT_SAVE.settings, ...data.settings } } as GameSaveV11;
-    if (data.schemaVersion !== 9 && data.schemaVersion !== 10 && data.schemaVersion !== 11) return structuredClone(DEFAULT_SAVE);
+    if (data.schemaVersion === 4) return { ...structuredClone(DEFAULT_SAVE), ...data, schemaVersion: 12, map: 'summer-garden', encyclopedia: [], status: { ...DEFAULT_STATUS, ...data.status }, history: { ...DEFAULT_HISTORY, ...data.history }, settings: { ...DEFAULT_SAVE.settings, ...data.settings } } as GameSaveV11;
+    if (data.schemaVersion === 5 || data.schemaVersion === 6 || data.schemaVersion === 7) return { ...structuredClone(DEFAULT_SAVE), ...data, schemaVersion: 12, stageActiveSeconds: 0, stageCareCount: 0, status: { ...DEFAULT_STATUS, ...data.status }, history: { ...DEFAULT_HISTORY, ...data.history }, settings: { ...DEFAULT_SAVE.settings, ...data.settings } } as GameSaveV11;
+    if (data.schemaVersion === 8) return { ...structuredClone(DEFAULT_SAVE), ...data, schemaVersion: 12, illnessActive: false, illnessStep: null, status: { ...DEFAULT_STATUS, ...data.status }, history: { ...DEFAULT_HISTORY, ...data.history }, settings: { ...DEFAULT_SAVE.settings, ...data.settings } } as GameSaveV11;
+    if (data.schemaVersion !== 9 && data.schemaVersion !== 10 && data.schemaVersion !== 11 && data.schemaVersion !== 12) return structuredClone(DEFAULT_SAVE);
     const map: StageId = data.map === 'kids-room' || data.map === 'japanese-room' ? data.map : 'summer-garden';
     const currentCharacter = typeof data.currentCharacter === 'string' && (isSageCharacterId(data.currentCharacter) || data.currentCharacter === 'worldtchi' || data.currentCharacter === 'white-worldtchi' || data.currentCharacter === 'black-worldtchi') ? data.currentCharacter : 'worldtchi';
     const encyclopedia = [...new Set((data.encyclopedia ?? []).filter((id): id is SageCharacterId => typeof id === 'string' && isSageCharacterId(id)))];
@@ -46,8 +47,14 @@ export class SaveService {
     const illnessActive = Boolean(data.illnessActive && illnessStep);
     const request = illnessActive ? `sick-${illnessStep}` as RequestType : pendingRequest;
     const pendingRequestChoice = this.choiceForRequest(request, data.schemaVersion >= 10 ? data.pendingRequestChoice : null);
-    return { ...structuredClone(DEFAULT_SAVE), ...data, schemaVersion: 11, currentCharacter, map, encyclopedia, generation: Math.max(0, Math.floor(data.generation ?? 0)), stageActiveSeconds: Math.max(0, data.stageActiveSeconds ?? 0), stageCareCount: Math.max(0, Math.floor(data.stageCareCount ?? 0)), adultActiveSeconds: Math.max(0, data.adultActiveSeconds ?? 0), adultCareCount: Math.max(0, Math.floor(data.adultCareCount ?? 0)), eggAvailable: Boolean(data.eggAvailable), pendingRequest: request, pendingRequestChoice, illnessActive, illnessStep: illnessActive ? illnessStep : null, status: { ...DEFAULT_STATUS, ...data.status }, history: { ...DEFAULT_HISTORY, ...data.history }, settings: { ...DEFAULT_SAVE.settings, ...data.settings } } as GameSaveV11;
+    const settings = { ...DEFAULT_SAVE.settings, ...data.settings };
+    settings.bgmTrack = settings.bgmTrack === 'battle' || settings.bgmTrack === 'enzan' ? settings.bgmTrack : 'cafe';
+    settings.bgmVolume = this.volume(settings.bgmVolume, DEFAULT_SAVE.settings.bgmVolume);
+    settings.seVolume = this.volume(settings.seVolume, DEFAULT_SAVE.settings.seVolume);
+    settings.statusCollapsed = Boolean(settings.statusCollapsed);
+    return { ...structuredClone(DEFAULT_SAVE), ...data, schemaVersion: 12, currentCharacter, map, encyclopedia, generation: Math.max(0, Math.floor(data.generation ?? 0)), stageActiveSeconds: Math.max(0, data.stageActiveSeconds ?? 0), stageCareCount: Math.max(0, Math.floor(data.stageCareCount ?? 0)), adultActiveSeconds: Math.max(0, data.adultActiveSeconds ?? 0), adultCareCount: Math.max(0, Math.floor(data.adultCareCount ?? 0)), eggAvailable: Boolean(data.eggAvailable), pendingRequest: request, pendingRequestChoice, illnessActive, illnessStep: illnessActive ? illnessStep : null, status: { ...DEFAULT_STATUS, ...data.status }, history: { ...DEFAULT_HISTORY, ...data.history }, settings } as GameSaveV11;
   }
+  private volume(value: unknown, fallback: number): number { return typeof value === 'number' && Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : fallback; }
   private choiceForRequest(request: RequestType | null, choice: CareRequestChoice | null | undefined): CareRequestChoice | null {
     if (request === 'food') return choice === 'vegetable' || choice === 'sweet' || choice === 'meat' ? choice : 'vegetable';
     if (request === 'play') return choice === 'ball' || choice === 'rattle' || choice === 'book' ? choice : 'ball';

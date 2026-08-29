@@ -1,3 +1,5 @@
+import type { BgmTrack } from '../save/SaveService';
+
 export type SoundEffect = 'tap' | 'pet' | 'request' | 'happy' | 'angry' | 'sick' | 'recover' | 'evolution' | 'egg' | 'ui';
 
 const sounds: Record<SoundEffect, readonly [number, number, OscillatorType, number]> = {
@@ -9,18 +11,31 @@ const sounds: Record<SoundEffect, readonly [number, number, OscillatorType, numb
 export class AudioService {
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
-  private bgmGain: GainNode | null = null;
-  private bgmNodes: OscillatorNode[] = [];
+  private readonly bgm = new Audio();
   private unlocked = false;
   private pendingEffect: SoundEffect | null = null;
 
-  constructor(private bgmEnabled: boolean, private seEnabled: boolean) {
+  constructor(
+    private bgmEnabled: boolean,
+    private seEnabled: boolean,
+    private bgmTrack: BgmTrack,
+    private bgmVolume: number,
+    private seVolume: number,
+    private readonly assetBase: string,
+  ) {
+    this.bgm.loop = true;
+    this.bgm.preload = 'auto';
+    this.bgm.volume = this.bgmVolume;
+    this.updateBgmSource();
     document.addEventListener('pointerdown', this.unlock, { capture: true });
     document.addEventListener('keydown', this.unlock, { capture: true });
   }
 
   setBgmEnabled(enabled: boolean): void { this.bgmEnabled = enabled; if (enabled) this.startBgm(); else this.stopBgm(); }
   setSeEnabled(enabled: boolean): void { this.seEnabled = enabled; }
+  setBgmTrack(track: BgmTrack): void { if (track === this.bgmTrack) return; this.bgmTrack = track; this.updateBgmSource(); if (this.bgmEnabled && this.unlocked) this.startBgm(); }
+  setBgmVolume(volume: number): void { this.bgmVolume = Math.min(1, Math.max(0, volume)); this.bgm.volume = this.bgmVolume; }
+  setSeVolume(volume: number): void { this.seVolume = Math.min(1, Math.max(0, volume)); }
 
   play(name: SoundEffect): void {
     if (!this.seEnabled) return;
@@ -32,19 +47,21 @@ export class AudioService {
     const [from, to, type, duration] = sounds[name], now = this.context.currentTime;
     const oscillator = this.context.createOscillator(), gain = this.context.createGain();
     oscillator.type = type; oscillator.frequency.setValueAtTime(from, now); oscillator.frequency.exponentialRampToValueAtTime(to, now + duration);
-    gain.gain.setValueAtTime(.0001, now); gain.gain.exponentialRampToValueAtTime(name === 'angry' ? .055 : .085, now + .018); gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+    const peak = (name === 'angry' ? .07 : .11) * this.seVolume;
+    gain.gain.setValueAtTime(.0001, now); gain.gain.exponentialRampToValueAtTime(Math.max(.0001, peak), now + .018); gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
     oscillator.connect(gain).connect(this.master); oscillator.start(now); oscillator.stop(now + duration + .02);
   }
 
-  pause(): void { if (this.context?.state === 'running') void this.context.suspend(); }
-  resume(): void { if (this.unlocked && this.context?.state === 'suspended') void this.context.resume().then(() => this.startBgm()); }
+  pause(): void { this.bgm.pause(); if (this.context?.state === 'running') void this.context.suspend(); }
+  resume(): void { if (this.unlocked && this.context?.state === 'suspended') void this.context.resume().then(() => this.startBgm()); else if (this.unlocked) this.startBgm(); }
 
   dispose(): void {
     document.removeEventListener('pointerdown', this.unlock, true);
     document.removeEventListener('keydown', this.unlock, true);
     this.stopBgm();
     if (this.context) void this.context.close();
-    this.context = null; this.master = null; this.bgmGain = null;
+    this.bgm.removeAttribute('src'); this.bgm.load();
+    this.context = null; this.master = null;
   }
 
   private unlock = (): void => {
@@ -56,6 +73,7 @@ export class AudioService {
       this.master = this.context.createGain(); this.master.gain.value = .78; this.master.connect(this.context.destination);
     }
     this.unlocked = true;
+    this.startBgm();
     void this.context.resume().then(() => {
       this.startBgm();
       const pending = this.pendingEffect;
@@ -71,16 +89,10 @@ export class AudioService {
   };
 
   private startBgm(): void {
-    if (!this.bgmEnabled || !this.context || !this.master || this.context.state !== 'running' || this.bgmNodes.length) return;
-    this.bgmGain = this.context.createGain(); this.bgmGain.gain.value = .055; this.bgmGain.connect(this.master);
-    for (const [frequency, detune] of [[174.61, -4], [261.63, 5]] as const) {
-      const oscillator = this.context.createOscillator(); oscillator.type = 'sine'; oscillator.frequency.value = frequency; oscillator.detune.value = detune;
-      oscillator.connect(this.bgmGain); oscillator.start(); this.bgmNodes.push(oscillator);
-    }
+    if (!this.bgmEnabled || !this.unlocked || !this.bgm.paused) return;
+    void this.bgm.play().catch(() => { /* the next user gesture retries playback */ });
   }
 
-  private stopBgm(): void {
-    this.bgmNodes.forEach((node) => { try { node.stop(); } catch { /* already stopped */ } node.disconnect(); });
-    this.bgmNodes.length = 0; this.bgmGain?.disconnect(); this.bgmGain = null;
-  }
+  private stopBgm(): void { this.bgm.pause(); }
+  private updateBgmSource(): void { this.bgm.src = `${this.assetBase}${this.bgmTrack}.mp3`; this.bgm.load(); }
 }
