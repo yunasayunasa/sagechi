@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { AudioService } from '../audio/AudioService';
 import { FollowCamera } from '../camera/FollowCamera';
 import { CareSystem } from '../care/CareSystem';
 import { CareUI } from '../care/CareUI';
@@ -32,6 +33,7 @@ export class Game {
   private readonly saveService = new SaveService(GAME_CONFIG.save.key);
   private readonly save = this.saveService.load();
   private readonly care = new CareSystem(this.save, GAME_CONFIG, () => this.saveService.save(this.save));
+  private readonly audio = new AudioService(this.save.settings.bgm, this.save.settings.se);
   private readonly stageAssets = new StageAssetManager();
   private readonly stageLoader = new StageLoader(this.stageAssets);
   private stage: LoadedStage | null = null;
@@ -83,7 +85,7 @@ export class Game {
     if (initialConfig.id === 'worldtchi') this.evolution = this.createEvolution(loaded);
     document.querySelector<HTMLElement>('#character-name')!.textContent = initialConfig.id === 'worldtchi' ? this.evolution!.getCurrentName() : initialConfig.label;
     this.followCamera = new FollowCamera(this.camera, loaded.root, this.config);
-    this.input = new InputController(this.canvas, this.camera, loaded.hitArea, this.controller!, this.followCamera, this.config, () => this.care.pet());
+    this.input = new InputController(this.canvas, this.camera, loaded.hitArea, this.controller!, this.followCamera, this.config, () => { this.care.pet(); this.audio.play('pet'); }, () => this.audio.play('tap'));
     this.careUi = new CareUI(this.care, () => this.getCurrentCharacterName());
     this.encyclopedia = new EncyclopediaUI(this.save, SAGE_CHARACTER_CONFIGS, this.config.renderer.pixelRatioCap);
     this.eggView = new EggView(this.scene, () => void this.beginNextGeneration());
@@ -93,11 +95,14 @@ export class Game {
       if (event.kind === 'illness') {
         this.controller?.setSick(event.active);
         document.querySelector<HTMLElement>('.status-card')!.classList.toggle('sick', event.active);
+        this.audio.play(event.active ? 'sick' : 'recover');
         return;
       }
-      if (event.kind === 'care-complete') { this.evolution?.recordCare(); this.generation?.recordCare(); return; }
-      if (event.kind === 'rare-evolution') { this.startRareEvolution(); return; }
+      if (event.kind === 'request') { if (event.request) this.audio.play('request'); return; }
+      if (event.kind === 'care-complete') { this.audio.play('happy'); this.evolution?.recordCare(); this.generation?.recordCare(); return; }
+      if (event.kind === 'rare-evolution') { this.audio.play('evolution'); this.startRareEvolution(); return; }
       if (event.kind !== 'reaction' || event.visualHandled) return;
+      if (event.tone === 'angry') this.audio.play('angry');
       if (event.tone === 'happy') this.controller?.pet();
       else if (event.tone === 'calm') this.controller?.tap(this.camera.position);
       else this.controller?.delayReaction(event.tone === 'angry' ? 'angry' : undefined);
@@ -118,6 +123,7 @@ export class Game {
     this.saveService.save(this.save);
     this.careUi?.dispose();
     this.encyclopedia?.dispose();
+    this.audio.dispose();
     this.eggView?.dispose();
     this.unsubscribeCareReaction?.();
     this.input?.dispose();
@@ -175,6 +181,13 @@ export class Game {
     document.querySelectorAll<HTMLButtonElement>('[data-reaction]').forEach((button) => { button.onclick = () => (this.controller as WalkingCharacterController)?.playReaction?.(button.dataset.reaction as SemanticAnimation); });
     document.querySelector<HTMLButtonElement>('#force-tart-request')!.onclick = () => this.care.forceTartRequest();
     document.querySelector<HTMLButtonElement>('#force-illness')!.onclick = () => this.care.forceIllness();
+    const settingsPanel = document.querySelector<HTMLElement>('#settings-panel')!;
+    const bgm = document.querySelector<HTMLInputElement>('#setting-bgm')!, se = document.querySelector<HTMLInputElement>('#setting-se')!;
+    bgm.checked = this.save.settings.bgm; se.checked = this.save.settings.se;
+    document.querySelector<HTMLButtonElement>('#settings-button')!.onclick = () => { this.audio.play('ui'); settingsPanel.hidden = false; };
+    document.querySelector<HTMLButtonElement>('#settings-close')!.onclick = () => { this.audio.play('ui'); settingsPanel.hidden = true; };
+    bgm.onchange = () => { this.save.settings.bgm = bgm.checked; this.audio.setBgmEnabled(bgm.checked); this.saveService.save(this.save); };
+    se.onchange = () => { this.save.settings.se = se.checked; this.audio.setSeEnabled(se.checked); this.audio.play('ui'); this.saveService.save(this.save); };
     document.querySelector<HTMLButtonElement>('#evolution-close')!.onclick = () => { document.querySelector<HTMLElement>('#evolution-overlay')!.hidden = true; };
     const mapPanel = document.querySelector<HTMLElement>('#map-panel')!;
     document.querySelector<HTMLButtonElement>('#map-button')!.onclick = () => { mapPanel.hidden = false; };
@@ -196,8 +209,8 @@ export class Game {
 
   private visibility = (): void => {
     this.visible = !document.hidden;
-    if (this.visible) { this.clock.stop(); this.clock.start(); this.clock.getDelta(); }
-    else { this.saveService.save(this.save); this.clock.stop(); }
+    if (this.visible) { this.clock.stop(); this.clock.start(); this.clock.getDelta(); this.audio.resume(); }
+    else { this.saveService.save(this.save); this.clock.stop(); this.audio.pause(); }
   };
 
   private showEvolutionStart = (): void => {
@@ -210,6 +223,7 @@ export class Game {
 
   private showEvolutionComplete = (_form: string, name: string): void => {
     document.querySelector<HTMLElement>('#character-name')!.textContent = name;
+    this.audio.play('evolution');
     const overlay = document.querySelector<HTMLElement>('#evolution-overlay')!;
     overlay.querySelector('p')!.textContent = '育て方が新しい個性になった！';
     overlay.querySelector('h2')!.textContent = `${name} に進化した`;
@@ -244,6 +258,7 @@ export class Game {
   };
 
   private showEggAvailable = (): void => {
+    this.audio.play('egg');
     this.eggView?.setAvailable(true);
     document.querySelector<HTMLElement>('#message')!.textContent = 'いつの間にか、そばに卵がある。';
     this.effects.sparkle(new THREE.Vector3(-1.55, 1.15, .78));
@@ -329,7 +344,7 @@ export class Game {
 
   private updateStageUi(): void {
     const config = STAGES[this.save.map]; document.querySelector<HTMLElement>('#stage-label')!.textContent = config.label;
-    document.querySelector<HTMLElement>('#phase-label')!.textContent = `PHASE 8 / ${config.id.toUpperCase()}`;
+    document.querySelector<HTMLElement>('#phase-label')!.textContent = `PHASE 10 / ${config.id.toUpperCase()}`;
     document.querySelectorAll<HTMLButtonElement>('[data-stage]').forEach((button) => { button.classList.toggle('active', button.dataset.stage === this.save.map); });
   }
 
@@ -361,7 +376,7 @@ export class Game {
     previousInput?.dispose(); previousController?.dispose?.();
     if (previous) this.loader.dispose(previous);
     this.followCamera?.setTarget(loaded.root);
-    this.input = new InputController(this.canvas, this.camera, loaded.hitArea, this.controller!, this.followCamera!, this.config, () => this.care.pet());
+    this.input = new InputController(this.canvas, this.camera, loaded.hitArea, this.controller!, this.followCamera!, this.config, () => { this.care.pet(); this.audio.play('pet'); }, () => this.audio.play('tap'));
     this.debug?.setSources(this.controller!, this.input);
     this.evolution = config.id === 'worldtchi' && this.save.evolutionStage < 3 ? this.createEvolution(loaded) : null;
     document.querySelector<HTMLElement>('#character-name')!.textContent = config.id === 'worldtchi' ? this.evolution?.getCurrentName() ?? WORLDTCCHI_CONFIG.label : config.label;

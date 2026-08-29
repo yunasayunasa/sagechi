@@ -1,10 +1,10 @@
 import { DEFAULT_HISTORY, DEFAULT_STATUS } from '../care/care-types';
 import type { GameConfig } from '../config/game-config';
-import type { GameSaveV10 } from '../save/SaveService';
+import type { GameSaveV11 } from '../save/SaveService';
 import { isEggReady } from './generation-rules';
 
 export class GenerationSystem {
-  constructor(private readonly save: GameSaveV10, private readonly config: GameConfig, private readonly persist: () => void, private readonly onEggAvailable: () => void) {}
+  constructor(private readonly save: GameSaveV11, private readonly config: GameConfig, private readonly persist: () => void, private readonly onEggAvailable: () => void) {}
 
   update(dt: number): void {
     if (this.save.evolutionStage !== 3 || this.save.eggAvailable) return;

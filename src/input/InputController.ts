@@ -15,7 +15,7 @@ export class InputController {
   private readonly pickupPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
   private readonly intersection = new THREE.Vector3();
 
-  constructor(private readonly canvas: HTMLCanvasElement, private readonly camera: THREE.PerspectiveCamera, private readonly hitArea: THREE.Object3D, private readonly controller: CharacterController, private readonly followCamera: FollowCamera, private readonly config: GameConfig, private readonly onPet: () => void = () => {}) {
+  constructor(private readonly canvas: HTMLCanvasElement, private readonly camera: THREE.PerspectiveCamera, private readonly hitArea: THREE.Object3D, private readonly controller: CharacterController, private readonly followCamera: FollowCamera, private readonly config: GameConfig, private readonly onPet: () => void = () => {}, private readonly onTap: () => void = () => {}) {
     canvas.addEventListener('pointerdown', this.onDown, { passive: false });
     canvas.addEventListener('pointermove', this.onMove, { passive: false });
     canvas.addEventListener('pointerup', this.onUp, { passive: false });
@@ -50,7 +50,7 @@ export class InputController {
     if (!this.pointer || event.pointerId !== this.pointer.id) return; this.prevent(event); this.clearTimer();
     if (this.gesture === 'PICKUP') this.controller.releasePickup();
     else if (this.pointer.hit && this.gesture === 'PET') { this.controller.pet(); this.onPet(); }
-    else if (this.pointer.hit && this.distance(this.pointer) <= this.config.gesture.tapMaxDistancePx) { this.gesture = 'TAP'; this.controller.tap(this.camera.position); }
+    else if (this.pointer.hit && this.distance(this.pointer) <= this.config.gesture.tapMaxDistancePx) { this.gesture = 'TAP'; this.controller.tap(this.camera.position); this.onTap(); }
     this.pointer = null; this.blockedUntil = performance.now() + this.config.gesture.afterGestureCooldownMs;
     window.setTimeout(() => { if (!this.pointer) this.gesture = 'NONE'; }, 250);
   };

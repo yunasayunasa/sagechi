@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { GameConfig } from '../config/game-config';
-import type { GameSaveV10 } from '../save/SaveService';
+import type { GameSaveV11 } from '../save/SaveService';
 import type { CareRequestChoice, FoodChoice, PlayChoice, RequestType } from './care-types';
 import { shouldCreateTartRequest } from './care-rules';
 import { chooseRequestChoice, isExpectedChoice } from './care-request-rules';
@@ -21,7 +21,7 @@ export class CareSystem {
   private illnessClock = 0;
   private readonly listeners = new Set<(event: CareEvent) => void>();
 
-  constructor(readonly save: GameSaveV10, private readonly config: GameConfig, private readonly persist: () => void, private readonly rng: () => number = Math.random) {
+  constructor(readonly save: GameSaveV11, private readonly config: GameConfig, private readonly persist: () => void, private readonly rng: () => number = Math.random) {
     this.request = save.illnessActive && save.illnessStep ? `sick-${save.illnessStep}` : save.pendingRequest;
     this.requestChoice = save.pendingRequestChoice;
     this.scheduleRequest();
@@ -224,8 +224,8 @@ export class CareSystem {
     this.emit({ kind: 'request', request: null });
   }
 
-  private adjust(values: Partial<Record<keyof GameSaveV10['status'], number>>): void {
-    for (const key of Object.keys(values) as Array<keyof GameSaveV10['status']>) this.save.status[key] = clamp(this.save.status[key] + (values[key] ?? 0));
+  private adjust(values: Partial<Record<keyof GameSaveV11['status'], number>>): void {
+    for (const key of Object.keys(values) as Array<keyof GameSaveV11['status']>) this.save.status[key] = clamp(this.save.status[key] + (values[key] ?? 0));
     this.emit({ kind: 'status' });
   }
 

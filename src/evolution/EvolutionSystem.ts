@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { LoadedCharacter } from '../characters/CharacterLoader';
 import type { SageCharacterId } from '../characters/character-config';
 import type { GameConfig } from '../config/game-config';
-import type { GameSaveV10, WorldtchiForm } from '../save/SaveService';
+import type { GameSaveV11, WorldtchiForm } from '../save/SaveService';
 import { hasMetProgressThresholds } from '../progression/progression-rules';
 import { selectSageEvolution, type SageEvolutionEntry } from './sage-evolution-config';
 
@@ -23,7 +23,7 @@ export class EvolutionSystem {
   private readonly materials: MaterialSnapshot[] = [];
 
   constructor(
-    private readonly save: GameSaveV10,
+    private readonly save: GameSaveV11,
     private readonly character: LoadedCharacter,
     private readonly config: GameConfig,
     private readonly persist: () => void,

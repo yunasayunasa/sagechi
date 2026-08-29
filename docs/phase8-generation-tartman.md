@@ -23,4 +23,4 @@
 
 ## Phase境界
 
-この文書作成時点ではPhase 7は未実装だったが、現在は `phase7-illness-care.md` の仕様で実装済み。Phase 9以降へは進まない。
+この文書作成時点ではPhase 7は未実装だったが、現在は `phase7-illness-care.md` の仕様で実装済み。3ステージも完成し、Phase 10は `phase10-audio-settings.md` の範囲から着手している。

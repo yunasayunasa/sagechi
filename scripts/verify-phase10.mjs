@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { GAME_CONFIG } from '../src/config/game-config.ts';
+
+assert.equal(GAME_CONFIG.save.schemaVersion, 11);
+const save = readFileSync(new URL('../src/save/SaveService.ts', import.meta.url), 'utf8');
+assert.match(save, /settings: \{ debug: false, bgm: true, se: true \}/);
+assert.match(save, /schemaVersion: 11/);
+const audio = readFileSync(new URL('../src/audio/AudioService.ts', import.meta.url), 'utf8');
+for (const effect of ['tap', 'pet', 'request', 'happy', 'angry', 'sick', 'recover', 'evolution', 'egg', 'ui']) assert.match(audio, new RegExp(`${effect}:`));
+assert.match(audio, /document\.addEventListener\('pointerdown', this\.unlock/);
+assert.match(audio, /pause\(\): void/);
+assert.match(audio, /resume\(\): void/);
+const game = readFileSync(new URL('../src/core/Game.ts', import.meta.url), 'utf8');
+assert.match(game, /this\.audio\.pause\(\)/);
+assert.match(game, /this\.audio\.resume\(\)/);
+process.stdout.write('Phase 10 audio and settings foundation: PASS\n');

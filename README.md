@@ -113,7 +113,8 @@ npm run analyze:worldtchi
 - `stages/StageLoader`: Stage ConfigからAsset・Geometry・Interest Pointを構築
 - `stages/*-stage`: 3ステージの配置、軽量Collision、Interest Metadata
 - `stages/stage-registry`: ステージ切替用のConfig登録
-- `save/SaveService`: 育成・進化・病気・世代・卵・具体的な要求内容・図鑑、V1〜V10 Migration
+- `audio/AudioService`: iOS初回Gesture対応、軽量BGM、主要SE、Lifecycle Pause/Resume
+- `save/SaveService`: 育成・進化・病気・世代・卵・具体的な要求内容・音設定・図鑑、V1〜V11 Migration
 - `debug/DebugHud`: 開発情報と可視化
 
 ## 現在実装Phase
@@ -126,7 +127,8 @@ npm run analyze:worldtchi
 - Phase 6: 10種類の進化条件・図鑑 — 完了
 - Phase 7: 病気・看病 — 完了
 - Phase 8: 卵・世代交代・タルトマンっちレア進化 — 完了
-- Phase 9以降: 未着手
+- Phase 9: 3ステージ — 完了
+- Phase 10: BGM / SE / UI / バランス調整 / 最適化 — 着手（Audio・設定基盤まで完了）
 
 ## Phase 3の時間と保存
 
@@ -135,7 +137,7 @@ npm run analyze:worldtchi
 - 復帰時に巨大deltaや閉じていた時間を反映しない
 - ステータス、育成履歴、対応回数、設定をLocalStorageへ定期保存
 - 現在の進化段階と白／黒形態を保存し、再起動時は演出なしで復元
-- 賢者っちへの進化形態、段階別時間・お世話回数、病気・看病段階、世代、卵、保留中要求と希望内容、発見済み図鑑をSave schema V10で保存
+- 賢者っちへの進化形態、段階別時間・お世話回数、病気・看病段階、世代、卵、保留中要求と希望内容、BGM／SE設定、発見済み図鑑をSave schema V11で保存
 - ブラウザデータ削除時の消失は仕様として許容
 
 ## Phase 4の白黒進化
@@ -164,6 +166,13 @@ npm run analyze:worldtchi
 
 - 最終進化後、フォアグラウンド2分とお世話8回の両方を満たすと卵が現れる
 - 世代交代でStatus・History・進化を初期化し、図鑑・マップ・設定を保持する
+
+## Phase 10のサウンド・設定
+
+- iOS Safariの制約に合わせ、最初のPointer / Key入力後にAudioContextを開始
+- 育成画面では控えめなWeb Audio BGMを再生し、Tap、Pet、要求、喜怒、病気、回復、進化、卵、UIのSEを実装
+- 設定画面からBGMと効果音を個別に切替でき、端末へ保存
+- Background時はAudioContextをSuspendし、復帰時に安全にResume
 - 1回以上世代交代すると、食事要求の5%で「タルトが食べたいみたい」が発生する
 - レア要求への回答時だけタルトを表示し、与えると現在段階を問わずタルトマンっちへ進化する
 - タルト以外の食事や「あとでね」では進化せず、後の食事要求で再抽選される

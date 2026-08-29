@@ -4,12 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
     <meta name="theme-color" content="#b8dca8" />
-    <title>賢者っち — Phase 8</title>
+    <title>賢者っち — Phase 10</title>
   </head>
   <body>
     <main id="app">
       <canvas id="game-canvas" aria-label="キャラクターが暮らす3D空間"></canvas>
-      <header class="title-card"><small id="phase-label">PHASE 8 / SUMMER GARDEN</small><h1 id="character-name">ワールドっち</h1></header>
+      <header class="title-card"><small id="phase-label">PHASE 10 / SUMMER GARDEN</small><h1 id="character-name">ワールドっち</h1></header>
+      <button id="settings-button" class="settings-button" type="button" aria-label="設定を開く">⚙️</button>
       <section class="status-card" aria-label="キャラクターの状態">
         <div data-status="hunger" role="meter" aria-label="おなか" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span>🍽️ おなか</span><i><b class="status-fill"></b></i></div>
         <div data-status="sleepiness" role="meter" aria-label="元気" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span>✨ 元気</span><i><b class="status-fill"></b></i></div>
@@ -25,6 +26,7 @@
       <nav class="bottom-nav"><button id="care-button" type="button"><span>🤲</span>お世話</button><button id="map-button" type="button"><span>🏡</span><b id="stage-label">夏の庭</b></button><button id="encyclopedia-button" type="button"><span>📖</span>図鑑 <b id="encyclopedia-count">0/11</b></button></nav>
       <section id="care-panel" class="care-panel" hidden><header><h2>お世話</h2><button id="care-close" type="button" aria-label="閉じる">×</button></header><div class="care-options"></div></section>
       <section id="map-panel" class="care-panel map-panel" hidden><header><h2>どこで過ごす？</h2><button id="map-close" type="button" aria-label="閉じる">×</button></header><div class="map-options"><button type="button" data-stage="summer-garden"><span>🌻</span>夏の庭</button><button type="button" data-stage="kids-room"><span>🧸</span>子供部屋</button><button type="button" data-stage="japanese-room"><span>🍵</span>和室</button></div></section>
+      <section id="settings-panel" class="care-panel settings-panel" hidden><header><h2>設定</h2><button id="settings-close" type="button" aria-label="設定を閉じる">×</button></header><div class="settings-options"><label><span>🎵 BGM</span><input id="setting-bgm" type="checkbox" /></label><label><span>🔔 効果音</span><input id="setting-se" type="checkbox" /></label></div><p>音は最初に画面へ触れた後から再生されます。</p></section>
       <section id="egg-panel" class="care-panel egg-panel" hidden><header><h2>卵が生まれている</h2></header><p>この子ともう少し暮らす？<br />それとも卵から新しい世代を育てる？</p><div class="egg-options"><button id="egg-continue" type="button">今の子と暮らす</button><button id="egg-hatch" type="button">卵を育てる</button></div></section>
       <section id="encyclopedia-panel" class="encyclopedia-panel" hidden aria-label="賢者っち図鑑"><header><div><small>DISCOVERED <b id="encyclopedia-count-header">図鑑</b></small><h2>賢者っち図鑑</h2></div><button id="encyclopedia-close" type="button" aria-label="図鑑を閉じる">×</button></header><div class="encyclopedia-layout"><div id="encyclopedia-list" class="encyclopedia-list"></div><article id="encyclopedia-detail" class="encyclopedia-detail"><canvas id="encyclopedia-canvas" aria-label="発見した賢者っちの3Dモデル"></canvas><div class="unknown-silhouette" aria-label="未発見のシルエット">？</div><h3>？？？</h3><p class="encyclopedia-description"></p><p class="encyclopedia-hint"></p></article></div></section>
       <div id="stage-loading" class="stage-loading" hidden>お部屋を準備しています…</div>
