@@ -5,6 +5,7 @@ import type { GameConfig } from '../config/game-config';
 import type { GameSaveV11, WorldtchiForm } from '../save/SaveService';
 import { hasMetProgressThresholds } from '../progression/progression-rules';
 import { selectSageEvolution, type SageEvolutionEntry } from './sage-evolution-config';
+import { selectWorldBranch } from './world-branch-rules';
 
 type WorldMaterial = THREE.MeshToonMaterial | THREE.MeshStandardMaterial;
 type MaterialSnapshot = { material: WorldMaterial; color: THREE.Color; emissive: THREE.Color };
@@ -72,9 +73,8 @@ export class EvolutionSystem {
 
   private begin(): void {
     const history = this.save.history;
-    const calm = Object.entries(this.config.evolution.calmWeights).reduce((score, [key, weight]) => score + history[key as keyof typeof history] * weight, 0);
-    const active = Object.entries(this.config.evolution.activeWeights).reduce((score, [key, weight]) => score + history[key as keyof typeof history] * weight, 0);
-    this.targetForm = calm >= active ? 'white-worldtchi' : 'black-worldtchi';
+    const branch = selectWorldBranch(history, this.config.evolution.calmWeights, this.config.evolution.activeWeights, this.config.evolution.blackBias);
+    this.targetForm = branch === 'white' ? 'white-worldtchi' : 'black-worldtchi';
     this.targetSage = null;
     this.active = true;
     this.elapsed = 0;

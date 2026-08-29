@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { SAGE_EVOLUTIONS, selectSageEvolution } from '../src/evolution/sage-evolution-config.ts';
 import { hasMetProgressThresholds } from '../src/progression/progression-rules.ts';
+import { GAME_CONFIG } from '../src/config/game-config.ts';
+import { selectWorldBranch } from '../src/evolution/world-branch-rules.ts';
 
 const emptyHistory = { calm: 0, active: 0, sweet: 0, healthy: 0, meat: 0, playBall: 0, playRattle: 0, playBook: 0, affection: 0, stress: 0, sickCount: 0, careSuccess: 0, careDelay: 0 };
 const pick = (branch, values) => selectSageEvolution(branch, { ...emptyHistory, ...values }).id;
@@ -22,4 +24,10 @@ assert.equal(pick('black', { playBook: 10 }), 'estarriola');
 assert.equal(hasMetProgressThresholds(119.99, 8, { activeSeconds: 120, careCount: 8 }), false);
 assert.equal(hasMetProgressThresholds(120, 7, { activeSeconds: 120, careCount: 8 }), false);
 assert.equal(hasMetProgressThresholds(120, 8, { activeSeconds: 120, careCount: 8 }), true);
+const branch = (values) => selectWorldBranch({ ...emptyHistory, ...values }, GAME_CONFIG.evolution.calmWeights, GAME_CONFIG.evolution.activeWeights, GAME_CONFIG.evolution.blackBias);
+assert.equal(branch({}), 'white');
+assert.equal(branch({ calm: 4, affection: 2, healthy: 4, playBook: 2, careSuccess: 8 }), 'white');
+assert.equal(branch({ active: 6, playBall: 2, meat: 4, careSuccess: 8 }), 'black');
+assert.equal(branch({ active: 3, playRattle: 2, careDelay: 1, careSuccess: 8 }), 'black');
+assert.equal(GAME_CONFIG.evolution.blackBias, .9);
 process.stdout.write('Phase 6 evolution routes: 10 / 10 reachable\n');
