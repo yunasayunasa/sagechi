@@ -12,17 +12,23 @@ export class AudioService {
   private bgmGain: GainNode | null = null;
   private bgmNodes: OscillatorNode[] = [];
   private unlocked = false;
+  private pendingEffect: SoundEffect | null = null;
 
   constructor(private bgmEnabled: boolean, private seEnabled: boolean) {
-    document.addEventListener('pointerdown', this.unlock, { capture: true, once: true });
-    document.addEventListener('keydown', this.unlock, { capture: true, once: true });
+    document.addEventListener('pointerdown', this.unlock, { capture: true });
+    document.addEventListener('keydown', this.unlock, { capture: true });
   }
 
   setBgmEnabled(enabled: boolean): void { this.bgmEnabled = enabled; if (enabled) this.startBgm(); else this.stopBgm(); }
   setSeEnabled(enabled: boolean): void { this.seEnabled = enabled; }
 
   play(name: SoundEffect): void {
-    if (!this.seEnabled || !this.context || !this.master || this.context.state !== 'running') return;
+    if (!this.seEnabled) return;
+    if (!this.context || !this.master || this.context.state !== 'running') {
+      this.pendingEffect = name;
+      this.unlock();
+      return;
+    }
     const [from, to, type, duration] = sounds[name], now = this.context.currentTime;
     const oscillator = this.context.createOscillator(), gain = this.context.createGain();
     oscillator.type = type; oscillator.frequency.setValueAtTime(from, now); oscillator.frequency.exponentialRampToValueAtTime(to, now + duration);
@@ -43,16 +49,30 @@ export class AudioService {
 
   private unlock = (): void => {
     if (!this.context) {
-      this.context = new AudioContext();
-      this.master = this.context.createGain(); this.master.gain.value = .65; this.master.connect(this.context.destination);
+      const AudioContextClass = window.AudioContext
+        ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) return;
+      this.context = new AudioContextClass();
+      this.master = this.context.createGain(); this.master.gain.value = .78; this.master.connect(this.context.destination);
     }
     this.unlocked = true;
-    void this.context.resume().then(() => this.startBgm());
+    void this.context.resume().then(() => {
+      this.startBgm();
+      const pending = this.pendingEffect;
+      this.pendingEffect = null;
+      if (pending) this.play(pending);
+      if (this.context?.state === 'running') {
+        document.removeEventListener('pointerdown', this.unlock, true);
+        document.removeEventListener('keydown', this.unlock, true);
+      }
+    }).catch(() => {
+      // The next user gesture retries unlocking when a browser rejects this attempt.
+    });
   };
 
   private startBgm(): void {
     if (!this.bgmEnabled || !this.context || !this.master || this.context.state !== 'running' || this.bgmNodes.length) return;
-    this.bgmGain = this.context.createGain(); this.bgmGain.gain.value = .018; this.bgmGain.connect(this.master);
+    this.bgmGain = this.context.createGain(); this.bgmGain.gain.value = .055; this.bgmGain.connect(this.master);
     for (const [frequency, detune] of [[174.61, -4], [261.63, 5]] as const) {
       const oscillator = this.context.createOscillator(); oscillator.type = 'sine'; oscillator.frequency.value = frequency; oscillator.detune.value = detune;
       oscillator.connect(this.bgmGain); oscillator.start(); this.bgmNodes.push(oscillator);
