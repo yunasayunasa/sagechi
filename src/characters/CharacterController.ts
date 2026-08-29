@@ -13,6 +13,8 @@ export interface CharacterController {
   movePickup(point: THREE.Vector3): void;
   releasePickup(): void;
   setObstacles(obstacles: readonly CircleObstacle[]): void;
+  callTo(point: THREE.Vector3, cameraPosition: THREE.Vector3): boolean;
+  releaseCall(): void;
   getTargetLabel(): string;
   dispose?(): void;
 }

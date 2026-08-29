@@ -25,7 +25,7 @@ export class FollowCamera {
 
   setTarget(target: THREE.Object3D): void { this.target = target; }
 
-  /** 将来の「呼ぶ」演出から使用する近景切替口。 */
+  /** 「呼ぶ」演出の到着時と通常生活への復帰時に使用する。 */
   setMode(mode: CameraMode): void {
     this.mode = mode;
     this.idle = 0;

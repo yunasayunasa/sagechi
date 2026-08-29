@@ -59,6 +59,9 @@ export class Game {
   private rareEvolutionTarget: CharacterConfig | null = null;
   private rareEvolutionElapsed = 0;
   private rareEvolutionLoading = false;
+  private callActive = false;
+  private callArrived = false;
+  private callCloseElapsed = 0;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: this.config.renderer.antialias, powerPreference: 'high-performance' });
@@ -115,6 +118,7 @@ export class Game {
     this.renderer.render(this.scene, this.camera);
     this.frame = requestAnimationFrame(this.loop);
     document.querySelector<HTMLElement>('#loading')!.hidden = true;
+    if (!this.save.settings.tutorialSeen) this.showTutorial();
   }
 
   dispose(): void {
@@ -144,6 +148,7 @@ export class Game {
     if (!this.visible) return;
     const dt = Math.min(this.clock.getDelta(), this.config.timing.maxDeltaSeconds);
     if (!this.evolution?.active && !this.rareEvolutionTarget) this.controller?.update(dt);
+    this.updateCall(dt);
     if (this.activeConfig.id === 'worldtchi') this.evolution?.update(dt);
     this.updateRareEvolution(dt);
     if (!this.rareEvolutionTarget) this.generation?.update(dt);
@@ -194,6 +199,10 @@ export class Game {
     seVolume.oninput = () => { this.save.settings.seVolume = Number(seVolume.value) / 100; this.audio.setSeVolume(this.save.settings.seVolume); this.saveService.save(this.save); };
     seVolume.onchange = () => this.audio.play('ui');
     document.querySelector<HTMLButtonElement>('#restart-button')!.onclick = () => { if (confirm('図鑑・世代・設定を残して、幼年期のワールドっちから育て直しますか？')) void this.restartFromChild(); };
+    document.querySelector<HTMLButtonElement>('#call-button')!.onclick = () => { if (this.callActive) this.finishCall(); else this.beginCall(); };
+    document.querySelector<HTMLButtonElement>('#tutorial-open')!.onclick = () => { settingsPanel.hidden = true; this.showTutorial(); };
+    document.querySelector<HTMLButtonElement>('#tutorial-start')!.onclick = this.dismissTutorial;
+    document.querySelector<HTMLButtonElement>('#tutorial-skip')!.onclick = this.dismissTutorial;
     const statusCard = document.querySelector<HTMLElement>('.status-card')!, statusToggle = document.querySelector<HTMLButtonElement>('#status-toggle')!;
     const renderStatusCollapsed = () => { statusCard.classList.toggle('collapsed', this.save.settings.statusCollapsed); statusToggle.ariaExpanded = String(!this.save.settings.statusCollapsed); statusToggle.querySelector<HTMLElement>('b')!.textContent = this.save.settings.statusCollapsed ? '＋' : '−'; };
     statusToggle.onclick = () => { this.save.settings.statusCollapsed = !this.save.settings.statusCollapsed; renderStatusCollapsed(); this.saveService.save(this.save); }; renderStatusCollapsed();
@@ -223,6 +232,7 @@ export class Game {
   };
 
   private showEvolutionStart = (): void => {
+    this.finishCall();
     const overlay = document.querySelector<HTMLElement>('#evolution-overlay')!;
     overlay.hidden = false;
     overlay.querySelector('p')!.textContent = 'ワールドっちの様子が……';
@@ -275,6 +285,7 @@ export class Game {
 
   private startRareEvolution(): void {
     if (this.save.currentCharacter === 'tartman' || this.rareEvolutionTarget) return;
+    this.finishCall();
     const config = SAGE_CHARACTER_CONFIGS.find((item) => item.id === 'tartman');
     if (!config) return;
     const preserveEgg = this.save.eggAvailable;
@@ -362,6 +373,7 @@ export class Game {
 
   private async switchStage(id: StageId): Promise<void> {
     if (this.switchingStage || id === this.save.map) { document.querySelector<HTMLElement>('#map-panel')!.hidden = true; return; }
+    this.finishCall();
     this.switchingStage = true;
     const loading = document.querySelector<HTMLElement>('#stage-loading')!; loading.hidden = false;
     try {
@@ -402,6 +414,7 @@ export class Game {
   }
 
   private async swapCharacter(config: CharacterConfig): Promise<void> {
+    this.finishCall();
     const previous = this.character, previousController = this.controller, previousInput = this.input;
     const loaded = await this.mountCharacter(config);
     previousInput?.dispose(); previousController?.dispose?.();
@@ -428,4 +441,41 @@ export class Game {
   private getCurrentCharacterName(): string {
     return this.activeConfig.id === 'worldtchi' ? this.evolution?.getCurrentName() ?? WORLDTCCHI_CONFIG.label : this.activeConfig.label;
   }
+
+  private beginCall(): void {
+    if (!this.controller || !this.followCamera || this.evolution?.active || this.rareEvolutionTarget || this.switchingStage || this.switchingGeneration) return;
+    const destination = new THREE.Vector3(this.config.call.targetX, this.character?.root.position.y ?? 0, this.config.call.targetZ);
+    if (!this.controller.callTo(destination, this.camera.position)) {
+      document.querySelector<HTMLElement>('#message')!.textContent = '抱っこを終えてから呼んでね';
+      return;
+    }
+    this.callActive = true; this.callArrived = false; this.callCloseElapsed = 0;
+    const button = document.querySelector<HTMLButtonElement>('#call-button')!; button.classList.add('active'); button.querySelector('b')!.textContent = '戻す';
+    document.querySelector<HTMLElement>('#message')!.textContent = `${this.getCurrentCharacterName()}を呼んでいます`;
+  }
+
+  private updateCall(dt: number): void {
+    if (!this.callActive || !this.controller || !this.followCamera) return;
+    if (this.controller.state === 'called') {
+      if (!this.callArrived) {
+        this.callArrived = true; this.followCamera.setMode('close');
+        document.querySelector<HTMLElement>('#message')!.textContent = `${this.getCurrentCharacterName()}が近くまで来てくれた`;
+      }
+      this.callCloseElapsed += dt;
+      if (this.callCloseElapsed >= this.config.call.closeSeconds) this.finishCall();
+    } else if (this.controller.state !== 'calling') this.finishCall();
+  }
+
+  private finishCall(): void {
+    if (!this.callActive && this.followCamera?.getMode() !== 'close') return;
+    this.controller?.releaseCall(); this.followCamera?.setMode('overview');
+    this.callActive = false; this.callArrived = false; this.callCloseElapsed = 0;
+    const button = document.querySelector<HTMLButtonElement>('#call-button'); if (button) { button.classList.remove('active'); button.querySelector('b')!.textContent = '呼ぶ'; }
+  }
+
+  private showTutorial(): void { document.querySelector<HTMLElement>('#tutorial-panel')!.hidden = false; }
+  private dismissTutorial = (): void => {
+    document.querySelector<HTMLElement>('#tutorial-panel')!.hidden = true;
+    this.save.settings.tutorialSeen = true; this.saveService.save(this.save); this.audio.play('ui');
+  };
 }

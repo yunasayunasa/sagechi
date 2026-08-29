@@ -8,7 +8,7 @@ import type { LoadedCharacter } from './CharacterLoader';
 import type { CharacterConfig, SemanticAnimation } from './character-config';
 import { chooseDelayReaction } from '../care/care-rules';
 
-export type WalkingState = 'idle' | 'turning' | 'walking' | 'reaction' | 'pickup' | 'release';
+export type WalkingState = 'idle' | 'turning' | 'walking' | 'calling' | 'called' | 'reaction' | 'pickup' | 'release';
 const random = (min: number, max: number) => THREE.MathUtils.randFloat(min, max);
 
 export class WalkingCharacterController implements CharacterController {
@@ -19,6 +19,7 @@ export class WalkingCharacterController implements CharacterController {
   private reactionCooldown = 0;
   private sick = false;
   private pickupPoint = new THREE.Vector3();
+  private callCamera = new THREE.Vector3();
   private releaseStart = new THREE.Vector3();
   private releaseProgress = 0;
   constructor(readonly character: LoadedCharacter, private readonly characterConfig: CharacterConfig, private readonly config: GameConfig, private readonly effects: EffectSystem, private obstacles: readonly CircleObstacle[] = []) {
@@ -29,7 +30,7 @@ export class WalkingCharacterController implements CharacterController {
     this.animation.update(dt * (this.sick ? .62 : 1)); this.reactionCooldown = Math.max(0, this.reactionCooldown - dt);
     if (this.state === 'pickup') { this.character.root.position.lerp(this.pickupPoint, 1 - Math.exp(-dt * 12)); return; }
     if (this.state === 'release') { this.updateRelease(dt); return; }
-    if (this.state === 'reaction') return;
+    if (this.state === 'reaction' || this.state === 'called') return;
     if (this.state === 'idle') { this.idleLeft -= dt; if (this.idleLeft <= 0) this.chooseTarget(); return; }
     this.move(dt);
   }
@@ -55,7 +56,9 @@ export class WalkingCharacterController implements CharacterController {
   movePickup(point: THREE.Vector3): void { if (this.state === 'pickup') this.pickupPoint.copy(this.clamp(point)); }
   releasePickup(): void { if (this.state !== 'pickup') return; this.state = 'release'; this.releaseStart.copy(this.character.root.position); this.releaseProgress = 0; this.effects.sparkle(this.effectPosition()); }
   setObstacles(obstacles: readonly CircleObstacle[]): void { this.obstacles = obstacles; }
-  getTargetLabel(): string { return this.state === 'walking' || this.state === 'turning' ? `${this.target.x.toFixed(2)}, ${this.target.z.toFixed(2)}` : '—'; }
+  callTo(point: THREE.Vector3, cameraPosition: THREE.Vector3): boolean { if (this.state === 'pickup' || this.state === 'release') return false; this.target.copy(point).setY(this.characterConfig.groundOffset); this.callCamera.copy(cameraPosition); this.state = 'calling'; this.animation.play('walk'); return true; }
+  releaseCall(): void { if (this.state === 'calling' || this.state === 'called') this.enterIdle(true); }
+  getTargetLabel(): string { return this.state === 'walking' || this.state === 'turning' || this.state === 'calling' ? `${this.target.x.toFixed(2)}, ${this.target.z.toFixed(2)}` : '—'; }
   dispose(): void { this.animation.dispose(); }
   private enterIdle(afterInteraction = false): void {
     this.state = 'idle'; this.character.root.position.y = this.characterConfig.groundOffset;
@@ -72,11 +75,11 @@ export class WalkingCharacterController implements CharacterController {
   }
   private move(dt: number): void {
     const root = this.character.root, delta = this.target.clone().sub(root.position); delta.y = 0; const distance = delta.length();
-    if (distance <= this.config.movement.arrivalDistance) { root.position.x = this.target.x; root.position.z = this.target.z; this.enterIdle(); return; }
+    if (distance <= this.config.movement.arrivalDistance) { root.position.x = this.target.x; root.position.z = this.target.z; if (this.state === 'calling') { this.state = 'called'; this.animation.play('idle'); const look = this.callCamera.clone().sub(root.position); look.y = 0; if (look.lengthSq()) root.rotation.y = Math.atan2(look.x, look.z); this.effects.sparkle(this.effectPosition()); } else this.enterIdle(); return; }
     const desiredYaw = Math.atan2(delta.x, delta.z), yawDelta = Math.atan2(Math.sin(desiredYaw - root.rotation.y), Math.cos(desiredYaw - root.rotation.y));
     root.rotation.y += THREE.MathUtils.clamp(yawDelta, -this.config.walking.turnSpeed * dt, this.config.walking.turnSpeed * dt);
     if (this.state === 'turning' && Math.abs(yawDelta) < .22) { this.state = 'walking'; this.animation.play('walk'); }
-    if (this.state === 'walking') root.position.addScaledVector(delta.normalize(), Math.min(distance, this.config.walking.speed * (this.characterConfig.moveSpeedScale ?? 1) * (this.sick ? .58 : 1) * dt));
+    if (this.state === 'walking' || this.state === 'calling') root.position.addScaledVector(delta.normalize(), Math.min(distance, this.config.walking.speed * (this.characterConfig.moveSpeedScale ?? 1) * (this.sick ? .58 : 1) * dt));
   }
   private react(name: SemanticAnimation, effect: 'heart' | 'sparkle' | 'none'): void {
     if (this.reactionCooldown > 0 && this.state === 'reaction') return;

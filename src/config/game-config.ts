@@ -11,6 +11,7 @@ export const GAME_CONFIG = Object.freeze({
     returnDelaySeconds: 2.6, returnDamping: 0.7, followDamping: 4.5,
     modeTransitionDamping: 2.2,
   },
+  call: { targetX: 0, targetZ: 1.05, closeSeconds: 8 },
   movement: {
     halfWidth: 2.35, halfDepth: 1.45, speed: 0.38, arrivalDistance: 0.08,
     turnSpeed: 1.25, idleMinSeconds: 4.5, idleMaxSeconds: 9.5,
@@ -46,7 +47,7 @@ export const GAME_CONFIG = Object.freeze({
     activeWeights: { active: 1, playBall: .6, playRattle: .35, careDelay: 1.2, stress: .5, meat: .4 },
   },
   generation: { eggActiveSeconds: 120, eggCareCount: 8, rareTartChance: .05 },
-  save: { key: 'sagechi.phase12.save', schemaVersion: 12 },
+  save: { key: 'sagechi.phase12.save', schemaVersion: 13 },
   debug: { enabledByDefault: false },
 });
 export type GameConfig = typeof GAME_CONFIG;

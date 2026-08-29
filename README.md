@@ -1,6 +1,6 @@
 # 賢者っち
 
-スマートフォン向け3D育成ゲーム「賢者っち」の本番プロジェクトです。現在は **Phase 1〜Phase 8** を実装しています。本物のワールドっちGLBがのんびり生活し、育て方によって10種類の賢者っちへ進化します。病気の時は連続した看病で回復し、卵から世代を重ねるとレア要求からタルトマンっちへ進化する可能性があります。
+スマートフォン向け3D育成ゲーム「賢者っち」の本番プロジェクトです。要件定義の **Phase 1〜Phase 10を完了** しています。本物のワールドっちGLBがのんびり生活し、育て方によって10種類の賢者っちへ進化します。病気の時は連続した看病で回復し、卵から世代を重ねるとレア要求からタルトマンっちへ進化する可能性があります。
 
 背景はCC0 AssetとThree.js Geometryを組み合わせた **夏の庭・子供部屋・和室** の3ステージを実装しています。下部のマップボタンから切り替えられ、選択したステージは端末に保存されます。
 
@@ -70,6 +70,7 @@ npm run analyze:worldtchi
 - Character上Swipe: Pet（Cameraは動かない）
 - Character長押し: PickUp開始、そのままDrag
 - Background Swipe: 制限付きCamera見回し
+- 呼ぶ: キャラクターが手前へ移動し、到着後8秒間の近影Cameraへ切替。再押下で即時復帰
 - Release: 浮遊高度へ戻り、Idle後に自律生活へ復帰
 - お世話: 食事（野菜・甘いもの・肉）、遊び（ボール・ガラガラ・絵本）、休む
 - オネダリ: 「応える」から適切なお世話、または「あとでね」
@@ -77,7 +78,7 @@ npm run analyze:worldtchi
 - レア要求: 2世代目以降の食事要求の5%で発生し、その時だけタルトを選択可能
 - 育成メーターは良好状態から減る表示で統一し、初期版より2倍の速度で悪化するアクティブ調整
 
-通常時はステージ内で暮らす様子が見える俯瞰距離です。将来の「呼ぶ」操作では、`FollowCamera.setMode('close')` を使って従来相当の近景へ滑らかに切り替えられます（呼ぶUI自体はPhase 3以降）。
+通常時はステージ内で暮らす様子が見える俯瞰距離です。「呼ぶ」では `FollowCamera.setMode('close')` を使い、近くへ来たキャラクターを滑らかに近影表示します。初回起動時に操作ガイドを表示し、設定から再表示できます。
 
 ## スマートフォン確認
 
@@ -96,8 +97,8 @@ npm run analyze:worldtchi
 
 - `core/Game`: Scene、Renderer、Loop、Lifecycle、Stage組立
 - `characters/CharacterLoader`: GLB、賢者っちのToon変換、ワールドっち系のGlossy PBR変換、Scale/中心補正、Dispose
-- `characters/FloatingCharacterController`: 浮遊、自律行動、Reaction、PickUp
-- `characters/WalkingCharacterController`: 賢者っちのIdle、自律歩行、旋回、Reaction、PickUp
+- `characters/FloatingCharacterController`: 浮遊、自律行動、Reaction、PickUp、呼び寄せ
+- `characters/WalkingCharacterController`: 賢者っちのIdle、自律歩行、旋回、Reaction、PickUp、呼び寄せ
 - `characters/AnimationController`: 意味名Animation、CrossFade、LoopOnce復帰、Root Motion除去
 - `input/InputController`: Pointer EventとGesture優先順位
 - `camera/FollowCamera`: 追跡、制限付きSwipe、自動復帰
@@ -113,8 +114,8 @@ npm run analyze:worldtchi
 - `stages/StageLoader`: Stage ConfigからAsset・Geometry・Interest Pointを構築
 - `stages/*-stage`: 3ステージの配置、軽量Collision、Interest Metadata
 - `stages/stage-registry`: ステージ切替用のConfig登録
-- `audio/AudioService`: iOS初回Gesture対応、軽量BGM、主要SE、Lifecycle Pause/Resume
-- `save/SaveService`: 育成・進化・病気・世代・卵・具体的な要求内容・音設定・図鑑、V1〜V11 Migration
+- `audio/AudioService`: iOS初回Gesture対応、MP3 BGM切替、主要SE、個別音量、Lifecycle Pause/Resume
+- `save/SaveService`: 育成・進化・病気・世代・卵・要求・音設定・ガイド表示・図鑑、V1〜V13 Migration
 - `debug/DebugHud`: 開発情報と可視化
 
 ## 現在実装Phase
@@ -128,7 +129,7 @@ npm run analyze:worldtchi
 - Phase 7: 病気・看病 — 完了
 - Phase 8: 卵・世代交代・タルトマンっちレア進化 — 完了
 - Phase 9: 3ステージ — 完了
-- Phase 10: BGM / SE / UI / バランス調整 / 最適化 — 着手（Audio・設定基盤まで完了）
+- Phase 10: BGM / SE / UI / バランス調整 / 最適化 — 完了
 
 ## Phase 3の時間と保存
 
@@ -137,7 +138,7 @@ npm run analyze:worldtchi
 - 復帰時に巨大deltaや閉じていた時間を反映しない
 - ステータス、育成履歴、対応回数、設定をLocalStorageへ定期保存
 - 現在の進化段階と白／黒形態を保存し、再起動時は演出なしで復元
-- 賢者っちへの進化形態、段階別時間・お世話回数、病気・看病段階、世代、卵、保留中要求と希望内容、BGM／SE設定、発見済み図鑑をSave schema V11で保存
+- 賢者っちへの進化形態、段階別時間・お世話回数、病気・看病段階、世代、卵、保留中要求、BGM／SE設定、ガイド表示、発見済み図鑑をSave schema V13で保存
 - ブラウザデータ削除時の消失は仕様として許容
 
 ## Phase 4の白黒進化
@@ -172,9 +173,11 @@ npm run analyze:worldtchi
 ## Phase 10のサウンド・設定
 
 - iOS Safariの制約に合わせ、最初のPointer / Key入力後にAudioContextを開始
-- 育成画面では控えめなWeb Audio BGMを再生し、Tap、Pet、要求、喜怒、病気、回復、進化、卵、UIのSEを実装
-- 設定画面からBGMと効果音を個別に切替でき、端末へ保存
+- カフェ／バトル／甲板の3曲をループ再生し、設定画面から選曲可能
+- BGMと効果音のON/OFF・個別音量を設定して端末へ保存
 - Background時はAudioContextをSuspendし、復帰時に安全にResume
+- 育成メーター、お世話、背景選択を格納可能にし、設定から幼年期への育て直しを提供
+- 初回操作ガイドと、キャラクターが近くへ来る「呼ぶ」機能を実装
 - 1回以上世代交代すると、食事要求の5%で「タルトが食べたいみたい」が発生する
 - レア要求への回答時だけタルトを表示し、与えると現在段階を問わずタルトマンっちへ進化する
 - タルト以外の食事や「あとでね」では進化せず、後の食事要求で再抽選される
@@ -188,3 +191,9 @@ npm run analyze:worldtchi
 - 3ステージともスマートフォン実機確認済み
 
 外部Assetの出典・License・使用モデルは `ASSET_LICENSES.md`、各ステージの構成と計測値は `docs/*-audit.md` を参照してください。
+
+## GitHub公開について
+
+GitHub Actionsではpushとpull requestのたびに `npm run verify` を実行します。一般公開前には `GITHUB_RELEASE_CHECKLIST.md` を確認してください。
+
+現時点ではプロジェクト全体のLICENSEを意図的に設定していません。また、キャラクターGLBとBGMはCC0背景Assetとは権利条件が異なります。公開前にコードのライセンスを選び、これらのAssetを公開リポジトリで再配布できることを確認してください。
