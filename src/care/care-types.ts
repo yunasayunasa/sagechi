@@ -1,4 +1,5 @@
-export type RequestType = 'food' | 'play' | 'sleep' | 'pet' | 'tart';
+export type IllnessStep = 'warm' | 'rest' | 'meal';
+export type RequestType = 'food' | 'play' | 'sleep' | 'pet' | 'tart' | 'sick-warm' | 'sick-rest' | 'sick-meal';
 export type FoodChoice = 'vegetable' | 'sweet' | 'meat' | 'tart';
 export type PlayChoice = 'ball' | 'rattle' | 'book';
 

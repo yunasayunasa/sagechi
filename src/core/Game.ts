@@ -90,6 +90,11 @@ export class Game {
     this.eggView.setAvailable(this.save.eggAvailable);
     this.generation = new GenerationSystem(this.save, this.config, () => this.saveService.save(this.save), this.showEggAvailable);
     this.unsubscribeCareReaction = this.care.subscribe((event) => {
+      if (event.kind === 'illness') {
+        this.controller?.setSick(event.active);
+        document.querySelector<HTMLElement>('.status-card')!.classList.toggle('sick', event.active);
+        return;
+      }
       if (event.kind === 'care-complete') { this.evolution?.recordCare(); this.generation?.recordCare(); return; }
       if (event.kind === 'rare-evolution') { this.startRareEvolution(); return; }
       if (event.kind !== 'reaction' || event.visualHandled) return;
@@ -169,6 +174,7 @@ export class Game {
     selector.onchange = () => void this.previewCharacter(selector.value);
     document.querySelectorAll<HTMLButtonElement>('[data-reaction]').forEach((button) => { button.onclick = () => (this.controller as WalkingCharacterController)?.playReaction?.(button.dataset.reaction as SemanticAnimation); });
     document.querySelector<HTMLButtonElement>('#force-tart-request')!.onclick = () => this.care.forceTartRequest();
+    document.querySelector<HTMLButtonElement>('#force-illness')!.onclick = () => this.care.forceIllness();
     document.querySelector<HTMLButtonElement>('#evolution-close')!.onclick = () => { document.querySelector<HTMLElement>('#evolution-overlay')!.hidden = true; };
     const mapPanel = document.querySelector<HTMLElement>('#map-panel')!;
     document.querySelector<HTMLButtonElement>('#map-button')!.onclick = () => { mapPanel.hidden = false; };
@@ -335,6 +341,7 @@ export class Game {
     this.controller = config.controller === 'walking'
       ? new WalkingCharacterController(loaded, config, this.config, this.effects, this.stage?.obstacles)
       : new FloatingCharacterController(loaded, this.config, this.effects, this.stage?.obstacles);
+    this.controller.setSick(this.save.illnessActive);
     return loaded;
   }
 

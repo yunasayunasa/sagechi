@@ -17,6 +17,7 @@ export class WalkingCharacterController implements CharacterController {
   private readonly animation: AnimationController;
   private idleLeft = 0;
   private reactionCooldown = 0;
+  private sick = false;
   private pickupPoint = new THREE.Vector3();
   private releaseStart = new THREE.Vector3();
   private releaseProgress = 0;
@@ -25,7 +26,7 @@ export class WalkingCharacterController implements CharacterController {
     this.enterIdle();
   }
   update(dt: number): void {
-    this.animation.update(dt); this.reactionCooldown = Math.max(0, this.reactionCooldown - dt);
+    this.animation.update(dt * (this.sick ? .62 : 1)); this.reactionCooldown = Math.max(0, this.reactionCooldown - dt);
     if (this.state === 'pickup') { this.character.root.position.lerp(this.pickupPoint, 1 - Math.exp(-dt * 12)); return; }
     if (this.state === 'release') { this.updateRelease(dt); return; }
     if (this.state === 'reaction') return;
@@ -40,6 +41,15 @@ export class WalkingCharacterController implements CharacterController {
   }
   pet(): void { if (this.state !== 'pickup') this.react('happy', 'heart'); }
   delayReaction(): void { if (this.state !== 'pickup') this.react(chooseDelayReaction(Math.random()), 'none'); }
+  setSick(active: boolean): void {
+    this.sick = active;
+    this.character.model.traverse((node) => {
+      if (!(node instanceof THREE.Mesh)) return;
+      for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
+        if (material instanceof THREE.MeshToonMaterial) material.emissiveIntensity = (Number(material.userData.baseEmissiveIntensity) || 0) * (active ? .25 : 1);
+      }
+    });
+  }
   playReaction(name: SemanticAnimation): void { if (name !== 'idle' && name !== 'walk') this.react(name, name === 'happy' ? 'heart' : 'sparkle'); }
   beginPickup(point: THREE.Vector3): void { this.state = 'pickup'; this.animation.play('idle'); this.pickupPoint.copy(this.clamp(point)); }
   movePickup(point: THREE.Vector3): void { if (this.state === 'pickup') this.pickupPoint.copy(this.clamp(point)); }
@@ -66,7 +76,7 @@ export class WalkingCharacterController implements CharacterController {
     const desiredYaw = Math.atan2(delta.x, delta.z), yawDelta = Math.atan2(Math.sin(desiredYaw - root.rotation.y), Math.cos(desiredYaw - root.rotation.y));
     root.rotation.y += THREE.MathUtils.clamp(yawDelta, -this.config.walking.turnSpeed * dt, this.config.walking.turnSpeed * dt);
     if (this.state === 'turning' && Math.abs(yawDelta) < .22) { this.state = 'walking'; this.animation.play('walk'); }
-    if (this.state === 'walking') root.position.addScaledVector(delta.normalize(), Math.min(distance, this.config.walking.speed * (this.characterConfig.moveSpeedScale ?? 1) * dt));
+    if (this.state === 'walking') root.position.addScaledVector(delta.normalize(), Math.min(distance, this.config.walking.speed * (this.characterConfig.moveSpeedScale ?? 1) * (this.sick ? .58 : 1) * dt));
   }
   private react(name: SemanticAnimation, effect: 'heart' | 'sparkle' | 'none'): void {
     if (this.reactionCooldown > 0 && this.state === 'reaction') return;

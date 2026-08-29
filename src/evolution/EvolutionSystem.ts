@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { LoadedCharacter } from '../characters/CharacterLoader';
 import type { SageCharacterId } from '../characters/character-config';
 import type { GameConfig } from '../config/game-config';
-import type { GameSaveV8, WorldtchiForm } from '../save/SaveService';
+import type { GameSaveV9, WorldtchiForm } from '../save/SaveService';
 import { hasMetProgressThresholds } from '../progression/progression-rules';
 import { selectSageEvolution, type SageEvolutionEntry } from './sage-evolution-config';
 
@@ -22,7 +22,7 @@ export class EvolutionSystem {
   private readonly materials: ToonSnapshot[] = [];
 
   constructor(
-    private readonly save: GameSaveV8,
+    private readonly save: GameSaveV9,
     private readonly character: LoadedCharacter,
     private readonly config: GameConfig,
     private readonly persist: () => void,
@@ -52,7 +52,9 @@ export class EvolutionSystem {
     const progress = this.elapsed / this.config.evolution.durationSeconds;
     const reveal = THREE.MathUtils.smoothstep(progress, .28, .88);
     const pulse = 1 + Math.sin(progress * Math.PI * 5) * .08 * (1 - reveal * .45);
-    const finalScale = THREE.MathUtils.lerp(1, this.config.evolution.scale, reveal);
+    const finalScale = this.targetForm
+      ? THREE.MathUtils.lerp(this.config.evolution.juvenileScale, this.config.evolution.scale, reveal)
+      : this.config.evolution.scale;
     this.character.visualPivot.scale.setScalar(pulse * finalScale);
     if (this.targetForm) this.applyMaterial(this.targetForm, reveal);
     if (progress >= 1 && this.targetForm) this.complete(this.targetForm);
@@ -114,7 +116,7 @@ export class EvolutionSystem {
   }
 
   private applyForm(form: WorldtchiForm): void {
-    this.character.visualPivot.scale.setScalar(form === 'worldtchi' ? 1 : this.config.evolution.scale);
+    this.character.visualPivot.scale.setScalar(form === 'worldtchi' ? this.config.evolution.juvenileScale : this.config.evolution.scale);
     this.applyMaterial(form, 1);
   }
 

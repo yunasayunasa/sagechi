@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import type { GameConfig } from '../config/game-config';
-import type { GameSaveV8 } from '../save/SaveService';
+import type { GameSaveV9 } from '../save/SaveService';
 import type { FoodChoice, PlayChoice, RequestType } from './care-types';
 import { shouldCreateTartRequest } from './care-rules';
+import { nextIllnessStep, shouldStartIllness } from './illness-rules';
 
-export type CareEvent = { kind: 'status' } | { kind: 'request'; request: RequestType | null } | { kind: 'reaction'; tone: 'happy' | 'calm' | 'delayed'; message: string; visualHandled?: boolean } | { kind: 'care-complete' } | { kind: 'rare-evolution' };
+export type CareEvent = { kind: 'status' } | { kind: 'request'; request: RequestType | null } | { kind: 'reaction'; tone: 'happy' | 'calm' | 'delayed'; message: string; visualHandled?: boolean } | { kind: 'illness'; active: boolean } | { kind: 'care-complete' } | { kind: 'rare-evolution' };
 
 const clamp = (value: number) => THREE.MathUtils.clamp(value, 0, 100);
 const random = (min: number, max: number) => THREE.MathUtils.randFloat(min, max);
@@ -15,10 +16,11 @@ export class CareSystem {
   private requestAt = 0;
   private saveClock = 0;
   private statusUiClock = 0;
+  private illnessClock = 0;
   private readonly listeners = new Set<(event: CareEvent) => void>();
 
-  constructor(readonly save: GameSaveV8, private readonly config: GameConfig, private readonly persist: () => void, private readonly rng: () => number = Math.random) {
-    this.request = save.pendingRequest;
+  constructor(readonly save: GameSaveV9, private readonly config: GameConfig, private readonly persist: () => void, private readonly rng: () => number = Math.random) {
+    this.request = save.illnessActive && save.illnessStep ? `sick-${save.illnessStep}` : save.pendingRequest;
     this.scheduleRequest();
   }
 
@@ -26,6 +28,7 @@ export class CareSystem {
     this.listeners.add(listener);
     listener({ kind: 'status' });
     listener({ kind: 'request', request: this.request });
+    listener({ kind: 'illness', active: this.save.illnessActive });
     return () => this.listeners.delete(listener);
   }
 
@@ -41,12 +44,30 @@ export class CareSystem {
     this.requestClock += dt;
     this.saveClock += dt;
     this.statusUiClock += dt;
+    this.illnessClock += dt;
     if (!this.request && this.requestClock >= this.requestAt) this.createRequest();
+    if (!this.request && !this.save.illnessActive && this.illnessClock >= this.config.illness.checkIntervalSeconds) {
+      this.illnessClock = 0;
+      if (shouldStartIllness({ careCount: this.save.careCount, careDelay: this.save.history.careDelay, status: this.save.status }, this.config.illness, this.rng())) this.startIllness();
+    }
     if (this.saveClock >= this.config.care.saveIntervalSeconds) { this.saveClock = 0; this.persist(); }
     if (this.statusUiClock >= .25) { this.statusUiClock = 0; this.emit({ kind: 'status' }); }
   }
 
   feed(choice: FoodChoice): void {
+    if (this.request === 'sick-meal') {
+      if (choice !== 'vegetable') {
+        this.adjust(choice === 'sweet' ? { hunger: -22, mood: 5 } : { hunger: -30, mood: 3 });
+        this.persist();
+        this.emit({ kind: 'reaction', tone: 'delayed', message: '今は胃にやさしいものがよさそう。', visualHandled: true });
+        return;
+      }
+      this.adjust({ hunger: -27, health: 5, stress: -4 });
+      this.save.history.healthy += 2;
+      this.save.history.calm += 1;
+      this.completeIllnessStep();
+      return;
+    }
     if (choice === 'tart') {
       if (this.request !== 'tart') return;
       this.adjust({ hunger: -36, mood: 16, stress: -4 });
@@ -83,7 +104,15 @@ export class CareSystem {
   rest(): void {
     this.adjust({ sleepiness: -38, stress: -6, health: 4, mood: 3 });
     this.save.history.calm += 2;
+    if (this.request === 'sick-rest') { this.completeIllnessStep(); return; }
     this.completeCare('ゆっくり休めたみたい。', 'calm');
+  }
+
+  warm(): void {
+    if (this.request !== 'sick-warm') return;
+    this.adjust({ stress: -5, health: 3, mood: 2 });
+    this.save.history.calm += 1;
+    this.completeIllnessStep();
   }
 
   pet(): void {
@@ -100,6 +129,11 @@ export class CareSystem {
     this.save.history.active += 1;
     this.save.history.stress += 1;
     this.save.history.careDelay += 1;
+    if (this.save.illnessActive) {
+      this.persist();
+      this.emit({ kind: 'reaction', tone: 'delayed', message: 'まだつらそう。あとで看病してあげよう。' });
+      return;
+    }
     this.save.careCount += 1;
     this.request = null;
     this.save.pendingRequest = null;
@@ -111,6 +145,13 @@ export class CareSystem {
   }
 
   private createRequest(): void {
+    if (this.save.illnessActive && this.save.illnessStep) {
+      this.request = `sick-${this.save.illnessStep}`;
+      this.save.pendingRequest = this.request;
+      this.persist();
+      this.emit({ kind: 'request', request: this.request });
+      return;
+    }
     const status = this.save.status;
     const weighted: Array<[RequestType, number]> = [
       ['food', Math.max(8, status.hunger)], ['play', Math.max(8, status.boredom)],
@@ -139,24 +180,68 @@ export class CareSystem {
   }
 
   forceTartRequest(): void {
+    if (this.save.illnessActive) return;
     this.request = 'tart';
     this.save.pendingRequest = 'tart';
     this.persist();
     this.emit({ kind: 'request', request: 'tart' });
   }
 
+  forceIllness(): void { if (!this.save.illnessActive) this.startIllness(); }
+
   resetForGeneration(): void {
     this.request = null;
     this.save.pendingRequest = null;
+    this.save.illnessActive = false;
+    this.save.illnessStep = null;
+    this.illnessClock = 0;
     this.scheduleRequest();
     this.persist();
     this.emit({ kind: 'status' });
     this.emit({ kind: 'request', request: null });
   }
 
-  private adjust(values: Partial<Record<keyof GameSaveV8['status'], number>>): void {
-    for (const key of Object.keys(values) as Array<keyof GameSaveV8['status']>) this.save.status[key] = clamp(this.save.status[key] + (values[key] ?? 0));
+  private adjust(values: Partial<Record<keyof GameSaveV9['status'], number>>): void {
+    for (const key of Object.keys(values) as Array<keyof GameSaveV9['status']>) this.save.status[key] = clamp(this.save.status[key] + (values[key] ?? 0));
     this.emit({ kind: 'status' });
+  }
+
+  private startIllness(): void {
+    this.save.illnessActive = true;
+    this.save.illnessStep = 'warm';
+    this.save.history.sickCount += 1;
+    this.request = 'sick-warm';
+    this.save.pendingRequest = this.request;
+    this.adjust({ health: -12, mood: -6, stress: 5 });
+    this.persist();
+    this.emit({ kind: 'request', request: this.request });
+    this.emit({ kind: 'illness', active: true });
+    this.emit({ kind: 'reaction', tone: 'calm', message: 'なんだか体調が悪そう……。', visualHandled: true });
+  }
+
+  private completeIllnessStep(): void {
+    this.save.history.careSuccess += 1;
+    this.save.careCount += 1;
+    this.emit({ kind: 'care-complete' });
+    const next = this.save.illnessStep ? nextIllnessStep(this.save.illnessStep) : null;
+    if (next) {
+      this.save.illnessStep = next;
+      this.request = `sick-${next}`;
+      const message = next === 'rest' ? 'あたたまって、少し眠くなったみたい。' : 'よく休めたら、おなかが空いてきたみたい。';
+      this.emit({ kind: 'reaction', tone: 'calm', message, visualHandled: true });
+    } else {
+      this.save.illnessActive = false;
+      this.save.illnessStep = null;
+      this.request = null;
+      this.illnessClock = 0;
+      this.adjust({ health: 18, stress: -15, mood: 10 });
+      this.emit({ kind: 'illness', active: false });
+      this.emit({ kind: 'reaction', tone: 'happy', message: 'しっかり休めて、元気になった！' });
+      this.scheduleRequest();
+    }
+    this.save.pendingRequest = this.request;
+    this.persist();
+    this.emit({ kind: 'request', request: this.request });
   }
 
   private scheduleRequest(): void {

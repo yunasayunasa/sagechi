@@ -39,13 +39,14 @@ export const GAME_CONFIG = Object.freeze({
     requestMinSeconds: 18, requestMaxSeconds: 32, requestNeedThreshold: 48,
     saveIntervalSeconds: 5,
   },
+  illness: { checkIntervalSeconds: 20, minimumCareCount: 3, stressThreshold: 60, healthThreshold: 70, careDelayThreshold: 2, baseChance: .015, highRiskChance: .12 },
   evolution: {
-    activeSeconds: 120, careCount: 8, durationSeconds: 3.2, scale: 1.08,
+    activeSeconds: 120, careCount: 8, durationSeconds: 3.2, juvenileScale: .7, scale: 1.08,
     calmWeights: { calm: 1, affection: 0.8, healthy: 0.5, playBook: 0.5, careSuccess: 0.1 },
     activeWeights: { active: 1, playBall: 0.5, playRattle: 0.25, careDelay: 1.2, stress: 0.5, meat: 0.25 },
   },
   generation: { eggActiveSeconds: 120, eggCareCount: 8, rareTartChance: .05 },
-  save: { key: 'sagechi.phase12.save', schemaVersion: 8 },
+  save: { key: 'sagechi.phase12.save', schemaVersion: 9 },
   debug: { enabledByDefault: false },
 });
 export type GameConfig = typeof GAME_CONFIG;
