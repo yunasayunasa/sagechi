@@ -49,6 +49,7 @@ export class GenerationSystem {
     this.save.pendingRequestChoice = null;
     this.save.illnessActive = false;
     this.save.illnessStep = null;
+    this.save.illnessCareCount = 0;
     this.persist();
   }
 

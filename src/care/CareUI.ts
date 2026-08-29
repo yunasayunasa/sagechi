@@ -29,6 +29,7 @@ export class CareUI {
     document.querySelector<HTMLButtonElement>('#care-button')!.onclick = () => { if (this.panel.hidden) this.openMain(); else this.close(); };
     document.querySelector<HTMLButtonElement>('#care-close')!.onclick = () => this.close();
     document.querySelector<HTMLButtonElement>('#request-open')!.onclick = () => this.openForRequest();
+    document.querySelector<HTMLButtonElement>('#request-delay')!.onclick = () => { this.care.delay(); this.close(); };
     this.panel.addEventListener('click', this.onPanelClick);
     this.unsubscribe = care.subscribe(this.onCareEvent);
     this.renderStatus();
@@ -62,17 +63,17 @@ export class CareUI {
     this.requestBubble.querySelector<HTMLElement>('.request-text')!.textContent = choice?.text ?? label.text;
   }
 
-  private openMain(): void { document.querySelector<HTMLElement>('#map-panel')!.hidden = true; if (this.care.save.illnessActive) this.openForRequest(); else this.renderPanel('お世話', `<button data-menu="food">🍽️ 食事</button><button data-menu="play">🧸 遊び</button><button data-action="rest">💤 休む</button>`); }
+  private openMain(): void { document.querySelector<HTMLElement>('#map-panel')!.hidden = true; this.care.deferIllnessRequest(); this.renderPanel('お世話', `<button data-menu="food">🍽️ 食事</button><button data-menu="play">🧸 遊び</button><button data-action="rest">💤 休む</button>`); }
   private openForRequest(): void {
     if (this.care.request === 'food' || this.care.request === 'tart' || this.care.request === 'sick-meal') this.openFood();
     else if (this.care.request === 'play') this.openPlay();
-    else if (this.care.request === 'sleep') this.renderPanel('眠そう…', `<button data-action="rest">🛏️ 休ませる</button><button data-action="wake">☀️ 起こす</button><button class="later" data-action="delay">あとでね</button>`);
-    else if (this.care.request === 'pet') this.renderPanel('撫でてほしそう', `<p class="care-hint">${this.getCharacterName()}の上を指で撫でてね</p><button class="later" data-action="delay">あとでね</button>`);
-    else if (this.care.request === 'sick-warm') this.renderPanel('寒そう……', `<button data-action="warm">🧣 あたためる</button><button data-action="cool">🧊 冷やす</button><button class="later" data-action="delay">あとでね</button>`);
-    else if (this.care.request === 'sick-rest') this.renderPanel('眠そう……', `<button data-action="rest">🛏️ 休ませる</button><button data-action="wake">☀️ 起こす</button><button class="later" data-action="delay">あとでね</button>`);
+    else if (this.care.request === 'sleep') this.renderPanel('眠そう…', `<button data-action="rest">🛏️ 休ませる</button><button data-action="wake">☀️ 起こす</button>`);
+    else if (this.care.request === 'pet') this.renderPanel('撫でてほしそう', `<p class="care-hint">${this.getCharacterName()}の上を指で撫でてね</p>`);
+    else if (this.care.request === 'sick-warm') this.renderPanel('寒そう……', `<button data-action="warm">🧣 あたためる</button><button data-action="cool">🧊 冷やす</button>`);
+    else if (this.care.request === 'sick-rest') this.renderPanel('眠そう……', `<button data-action="rest">🛏️ 休ませる</button><button data-action="wake">☀️ 起こす</button>`);
   }
-  private openFood(): void { this.renderPanel('なにを食べる？', `<button data-food="vegetable">🥦 野菜</button><button data-food="sweet">🍰 甘いもの</button><button data-food="meat">🍖 肉</button>${this.care.request === 'tart' ? '<button class="rare-food" data-food="tart">🥧 タルト</button>' : ''}${this.care.request ? '<button class="later" data-action="delay">あとでね</button>' : ''}`); }
-  private openPlay(): void { this.renderPanel('なにして遊ぶ？', `<button data-play="ball">⚽ ボール</button><button data-play="rattle">🪇 ガラガラ</button><button data-play="book">📖 絵本</button>${this.care.request ? '<button class="later" data-action="delay">あとでね</button>' : ''}`); }
+  private openFood(): void { this.renderPanel('なにを食べる？', `<button data-food="vegetable">🥦 野菜</button><button data-food="sweet">🍰 甘いもの</button><button data-food="meat">🍖 肉</button>${this.care.request === 'tart' ? '<button class="rare-food" data-food="tart">🥧 タルト</button>' : ''}`); }
+  private openPlay(): void { this.renderPanel('なにして遊ぶ？', `<button data-play="ball">⚽ ボール</button><button data-play="rattle">🪇 ガラガラ</button><button data-play="book">📖 絵本</button>`); }
   private renderPanel(title: string, content: string): void { this.panel.querySelector<HTMLElement>('h2')!.textContent = title; this.panel.querySelector<HTMLElement>('.care-options')!.innerHTML = content; this.panel.hidden = false; }
   private close(): void { this.panel.hidden = true; }
 

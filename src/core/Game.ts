@@ -110,7 +110,7 @@ export class Game {
       else if (event.tone === 'calm') this.controller?.tap(this.camera.position);
       else this.controller?.delayReaction(event.tone === 'angry' ? 'angry' : undefined);
     });
-    this.debug = new DebugHud(document.querySelector('#debug-hud')!, document.querySelector('#debug-controls')!, this.renderer, this.controller!, this.input);
+    if (import.meta.env.DEV) this.debug = new DebugHud(document.querySelector('#debug-hud')!, document.querySelector('#debug-controls')!, this.renderer, this.controller!, this.input);
     this.bindUi();
     this.running = true;
     this.clock.start();
@@ -164,7 +164,7 @@ export class Game {
   private setupEnvironment(): void {
     this.scene.add(new THREE.HemisphereLight(0xfff9e8, 0x5e7657, 2.5));
     const sun = new THREE.DirectionalLight(0xfff4cf, 2.2); sun.position.set(4, 7, 3); this.scene.add(sun);
-    this.createDebugHelpers();
+    if (import.meta.env.DEV) this.createDebugHelpers();
   }
 
   private createDebugHelpers(): void {
@@ -174,18 +174,21 @@ export class Game {
   }
 
   private bindUi(): void {
-    const button = document.querySelector<HTMLButtonElement>('#debug-button')!;
-    if (this.save.settings.debug) this.debug?.toggle();
-    button.onclick = () => { this.debug?.toggle(); this.save.settings.debug = !this.save.settings.debug; this.saveService.save(this.save); };
-    document.querySelector<HTMLInputElement>('#show-hit')!.onchange = (event) => { if (this.character) (this.character.hitArea.material as THREE.MeshBasicMaterial).opacity = (event.target as HTMLInputElement).checked ? .18 : 0; };
-    document.querySelector<HTMLInputElement>('#show-area')!.onchange = (event) => { if (this.areaHelper) this.areaHelper.visible = (event.target as HTMLInputElement).checked; };
-    document.querySelector<HTMLInputElement>('#show-target')!.onchange = (event) => { if (this.targetHelper) this.targetHelper.visible = (event.target as HTMLInputElement).checked; };
-    const selector = document.querySelector<HTMLSelectElement>('#character-preview')!;
-    selector.innerHTML = `<option value="worldtchi">ワールドっち（現在の育成個体）</option>${SAGE_CHARACTER_CONFIGS.map((config) => `<option value="${config.id}">${config.label}</option>`).join('')}`;
-    selector.onchange = () => void this.previewCharacter(selector.value);
-    document.querySelectorAll<HTMLButtonElement>('[data-reaction]').forEach((button) => { button.onclick = () => (this.controller as WalkingCharacterController)?.playReaction?.(button.dataset.reaction as SemanticAnimation); });
-    document.querySelector<HTMLButtonElement>('#force-tart-request')!.onclick = () => this.care.forceTartRequest();
-    document.querySelector<HTMLButtonElement>('#force-illness')!.onclick = () => this.care.forceIllness();
+    if (import.meta.env.DEV) {
+      const button = document.querySelector<HTMLButtonElement>('#debug-button')!;
+      button.style.display = 'block';
+      if (this.save.settings.debug) this.debug?.toggle();
+      button.onclick = () => { this.debug?.toggle(); this.save.settings.debug = !this.save.settings.debug; this.saveService.save(this.save); };
+      document.querySelector<HTMLInputElement>('#show-hit')!.onchange = (event) => { if (this.character) (this.character.hitArea.material as THREE.MeshBasicMaterial).opacity = (event.target as HTMLInputElement).checked ? .18 : 0; };
+      document.querySelector<HTMLInputElement>('#show-area')!.onchange = (event) => { if (this.areaHelper) this.areaHelper.visible = (event.target as HTMLInputElement).checked; };
+      document.querySelector<HTMLInputElement>('#show-target')!.onchange = (event) => { if (this.targetHelper) this.targetHelper.visible = (event.target as HTMLInputElement).checked; };
+      const selector = document.querySelector<HTMLSelectElement>('#character-preview')!;
+      selector.innerHTML = `<option value="worldtchi">ワールドっち（現在の育成個体）</option>${SAGE_CHARACTER_CONFIGS.map((config) => `<option value="${config.id}">${config.label}</option>`).join('')}`;
+      selector.onchange = () => void this.previewCharacter(selector.value);
+      document.querySelectorAll<HTMLButtonElement>('[data-reaction]').forEach((reactionButton) => { reactionButton.onclick = () => (this.controller as WalkingCharacterController)?.playReaction?.(reactionButton.dataset.reaction as SemanticAnimation); });
+      document.querySelector<HTMLButtonElement>('#force-tart-request')!.onclick = () => this.care.forceTartRequest();
+      document.querySelector<HTMLButtonElement>('#force-illness')!.onclick = () => this.care.forceIllness();
+    }
     const settingsPanel = document.querySelector<HTMLElement>('#settings-panel')!;
     const bgm = document.querySelector<HTMLInputElement>('#setting-bgm')!, se = document.querySelector<HTMLInputElement>('#setting-se')!;
     const bgmTrack = document.querySelector<HTMLSelectElement>('#setting-bgm-track')!, bgmVolume = document.querySelector<HTMLInputElement>('#setting-bgm-volume')!, seVolume = document.querySelector<HTMLInputElement>('#setting-se-volume')!;

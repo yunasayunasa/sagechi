@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { GAME_CONFIG } from '../src/config/game-config.ts';
 
-assert.equal(GAME_CONFIG.save.schemaVersion, 13);
+assert.equal(GAME_CONFIG.save.schemaVersion, 14);
 const save = readFileSync(new URL('../src/save/SaveService.ts', import.meta.url), 'utf8');
 assert.match(save, /bgmTrack: 'cafe', bgmVolume: \.55, seVolume: \.7, statusCollapsed: false/);
 assert.match(save, /tutorialSeen: false/);
-assert.match(save, /schemaVersion: 13/);
+assert.match(save, /schemaVersion: 14/);
 const audio = readFileSync(new URL('../src/audio/AudioService.ts', import.meta.url), 'utf8');
 for (const effect of ['tap', 'pet', 'request', 'happy', 'angry', 'sick', 'recover', 'evolution', 'egg', 'ui']) assert.match(audio, new RegExp(`${effect}:`));
 assert.match(audio, /document\.addEventListener\('pointerdown', this\.unlock/);

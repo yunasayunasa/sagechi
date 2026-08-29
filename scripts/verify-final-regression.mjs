@@ -9,13 +9,20 @@ const floating = read('../src/characters/FloatingCharacterController.ts');
 const walking = read('../src/characters/WalkingCharacterController.ts');
 const save = read('../src/save/SaveService.ts');
 
-assert.equal(GAME_CONFIG.save.schemaVersion, 13);
+assert.equal(GAME_CONFIG.save.schemaVersion, 14);
 assert.deepEqual(GAME_CONFIG.call, { targetX: 0, targetZ: 1.05, closeSeconds: 8 });
 for (const id of ['call-button', 'tutorial-panel', 'tutorial-start', 'tutorial-skip', 'tutorial-open']) assert.match(html, new RegExp(`id="${id}"`));
+for (const id of ['request-open', 'request-delay']) assert.match(html, new RegExp(`id="${id}"`));
 assert.match(save, /tutorialSeen: false/);
 assert.match(save, /settings\.tutorialSeen = Boolean\(settings\.tutorialSeen\)/);
-assert.match(save, /data\.schemaVersion !== 9[\s\S]*data\.schemaVersion !== 12 && data\.schemaVersion !== 13/);
-assert.match(save, /schemaVersion: 13, currentCharacter, map, encyclopedia/);
+assert.match(save, /data\.schemaVersion !== 9[\s\S]*data\.schemaVersion !== 14/);
+assert.match(save, /schemaVersion: 14, currentCharacter, map, encyclopedia/);
+const careUi = read('../src/care/CareUI.ts');
+assert.match(careUi, /#request-delay/);
+assert.doesNotMatch(careUi, /if \(this\.care\.save\.illnessActive\) this\.openForRequest/);
+assert.match(careUi, /this\.care\.deferIllnessRequest\(\)/);
+assert.doesNotMatch(careUi, /class="later" data-action="delay"/);
+assert.match(game, /if \(import\.meta\.env\.DEV\)/);
 for (const source of [floating, walking]) {
   assert.match(source, /'calling'/);
   assert.match(source, /'called'/);

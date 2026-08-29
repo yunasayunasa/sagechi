@@ -4,7 +4,7 @@ import type { GameSaveV11 } from '../save/SaveService';
 import type { CareRequestChoice, FoodChoice, PlayChoice, RequestType } from './care-types';
 import { shouldCreateTartRequest } from './care-rules';
 import { chooseRequestChoice, isExpectedChoice } from './care-request-rules';
-import { nextIllnessStep, shouldStartIllness } from './illness-rules';
+import { chooseIllnessStep, shouldStartIllness } from './illness-rules';
 
 export type CareEvent = { kind: 'status' } | { kind: 'request'; request: RequestType | null } | { kind: 'reaction'; tone: 'happy' | 'calm' | 'delayed' | 'angry'; message: string; visualHandled?: boolean } | { kind: 'illness'; active: boolean } | { kind: 'care-complete' } | { kind: 'rare-evolution' };
 
@@ -154,8 +154,14 @@ export class CareSystem {
     this.emit({ kind: 'reaction', tone: 'delayed', message: 'わかった、あとでね。' });
   }
 
+  deferIllnessRequest(): void {
+    if (!this.request?.startsWith('sick-')) return;
+    this.dismissRequest();
+  }
+
   private createRequest(): void {
     if (this.save.illnessActive && this.save.illnessStep) {
+      this.save.illnessStep = chooseIllnessStep(this.rng(), this.save.illnessStep);
       this.request = `sick-${this.save.illnessStep}`;
       this.save.pendingRequest = this.request;
       this.setRequestChoice(this.choiceForRequest(this.request));
@@ -211,6 +217,7 @@ export class CareSystem {
     this.save.pendingRequestChoice = null;
     this.save.illnessActive = false;
     this.save.illnessStep = null;
+    this.save.illnessCareCount = 0;
     this.illnessClock = 0;
     this.scheduleRequest();
     this.persist();
@@ -225,11 +232,12 @@ export class CareSystem {
 
   private startIllness(): void {
     this.save.illnessActive = true;
-    this.save.illnessStep = 'warm';
+    this.save.illnessCareCount = 0;
+    this.save.illnessStep = chooseIllnessStep(this.rng());
     this.save.history.sickCount += 1;
-    this.request = 'sick-warm';
+    this.request = `sick-${this.save.illnessStep}`;
     this.save.pendingRequest = this.request;
-    this.setRequestChoice('warm');
+    this.setRequestChoice(this.choiceForRequest(this.request));
     this.adjust({ health: -12, mood: -6, stress: 5 });
     this.persist();
     this.emit({ kind: 'request', request: this.request });
@@ -241,16 +249,16 @@ export class CareSystem {
     this.save.history.careSuccess += 1;
     this.save.careCount += 1;
     this.emit({ kind: 'care-complete' });
-    const next = this.save.illnessStep ? nextIllnessStep(this.save.illnessStep) : null;
-    if (next) {
-      this.save.illnessStep = next;
-      this.request = `sick-${next}`;
+    this.save.illnessCareCount += 1;
+    if (this.save.illnessCareCount < 3) {
+      this.save.illnessStep = chooseIllnessStep(this.rng(), this.save.illnessStep);
+      this.request = `sick-${this.save.illnessStep}`;
       this.setRequestChoice(this.choiceForRequest(this.request));
-      const message = next === 'rest' ? 'あたたまって、少し眠くなったみたい。' : 'よく休めたら、おなかが空いてきたみたい。';
-      this.emit({ kind: 'reaction', tone: 'calm', message, visualHandled: true });
+      this.emit({ kind: 'reaction', tone: 'calm', message: '少し楽になったみたい。もう少し看病してあげよう。', visualHandled: true });
     } else {
       this.save.illnessActive = false;
       this.save.illnessStep = null;
+      this.save.illnessCareCount = 0;
       this.request = null;
       this.requestChoice = null;
       this.illnessClock = 0;

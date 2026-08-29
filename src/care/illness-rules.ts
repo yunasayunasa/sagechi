@@ -28,8 +28,9 @@ export function shouldStartIllness(state: IllnessRiskState, config: IllnessRiskC
   return roll < getIllnessChance(state, config);
 }
 
-export function nextIllnessStep(step: IllnessStep): IllnessStep | null {
-  if (step === 'warm') return 'rest';
-  if (step === 'rest') return 'meal';
-  return null;
+const ILLNESS_STEPS: readonly IllnessStep[] = ['warm', 'rest', 'meal'];
+
+export function chooseIllnessStep(roll: number, previous: IllnessStep | null = null): IllnessStep {
+  const choices = previous ? ILLNESS_STEPS.filter((step) => step !== previous) : ILLNESS_STEPS;
+  return choices[Math.min(choices.length - 1, Math.floor(Math.max(0, roll) * choices.length))];
 }
