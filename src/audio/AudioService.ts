@@ -12,6 +12,8 @@ export class AudioService {
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
   private readonly bgm = new Audio();
+  private bgmSource: MediaElementAudioSourceNode | null = null;
+  private bgmGain: GainNode | null = null;
   private unlocked = false;
   private pendingEffect: SoundEffect | null = null;
 
@@ -25,7 +27,7 @@ export class AudioService {
   ) {
     this.bgm.loop = true;
     this.bgm.preload = 'auto';
-    this.bgm.volume = this.bgmVolume;
+    this.bgm.volume = 1;
     this.updateBgmSource();
     document.addEventListener('pointerdown', this.unlock, { capture: true });
     document.addEventListener('keydown', this.unlock, { capture: true });
@@ -34,7 +36,7 @@ export class AudioService {
   setBgmEnabled(enabled: boolean): void { this.bgmEnabled = enabled; if (enabled) this.startBgm(); else this.stopBgm(); }
   setSeEnabled(enabled: boolean): void { this.seEnabled = enabled; }
   setBgmTrack(track: BgmTrack): void { if (track === this.bgmTrack) return; this.bgmTrack = track; this.updateBgmSource(); if (this.bgmEnabled && this.unlocked) this.startBgm(); }
-  setBgmVolume(volume: number): void { this.bgmVolume = Math.min(1, Math.max(0, volume)); this.bgm.volume = this.bgmVolume; }
+  setBgmVolume(volume: number): void { this.bgmVolume = Math.min(1, Math.max(0, volume)); this.applyBgmVolume(); }
   setSeVolume(volume: number): void { this.seVolume = Math.min(1, Math.max(0, volume)); }
 
   play(name: SoundEffect): void {
@@ -47,9 +49,10 @@ export class AudioService {
     const [from, to, type, duration] = sounds[name], now = this.context.currentTime;
     const oscillator = this.context.createOscillator(), gain = this.context.createGain();
     oscillator.type = type; oscillator.frequency.setValueAtTime(from, now); oscillator.frequency.exponentialRampToValueAtTime(to, now + duration);
-    const peak = (name === 'angry' ? .07 : .11) * this.seVolume;
+    const peak = (name === 'angry' ? .12 : .18) * this.seVolume;
     gain.gain.setValueAtTime(.0001, now); gain.gain.exponentialRampToValueAtTime(Math.max(.0001, peak), now + .018); gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
     oscillator.connect(gain).connect(this.master); oscillator.start(now); oscillator.stop(now + duration + .02);
+    this.duckBgm(now, duration);
   }
 
   pause(): void { this.bgm.pause(); if (this.context?.state === 'running') void this.context.suspend(); }
@@ -61,7 +64,8 @@ export class AudioService {
     this.stopBgm();
     if (this.context) void this.context.close();
     this.bgm.removeAttribute('src'); this.bgm.load();
-    this.context = null; this.master = null;
+    this.bgmSource?.disconnect(); this.bgmGain?.disconnect();
+    this.context = null; this.master = null; this.bgmSource = null; this.bgmGain = null;
   }
 
   private unlock = (): void => {
@@ -71,6 +75,8 @@ export class AudioService {
       if (!AudioContextClass) return;
       this.context = new AudioContextClass();
       this.master = this.context.createGain(); this.master.gain.value = .78; this.master.connect(this.context.destination);
+      this.bgmGain = this.context.createGain(); this.applyBgmVolume(); this.bgmGain.connect(this.master);
+      this.bgmSource = this.context.createMediaElementSource(this.bgm); this.bgmSource.connect(this.bgmGain);
     }
     this.unlocked = true;
     this.startBgm();
@@ -95,4 +101,20 @@ export class AudioService {
 
   private stopBgm(): void { this.bgm.pause(); }
   private updateBgmSource(): void { this.bgm.src = `${this.assetBase}${this.bgmTrack}.mp3`; this.bgm.load(); }
+  private bgmLevel(): number { return .28 * this.bgmVolume * this.bgmVolume; }
+  private applyBgmVolume(): void {
+    if (!this.bgmGain || !this.context) return;
+    const now = this.context.currentTime;
+    this.bgmGain.gain.cancelScheduledValues(now);
+    this.bgmGain.gain.setValueAtTime(this.bgmLevel(), now);
+  }
+  private duckBgm(now: number, effectDuration: number): void {
+    if (!this.bgmGain || !this.bgmEnabled) return;
+    const normal = this.bgmLevel();
+    this.bgmGain.gain.cancelScheduledValues(now);
+    this.bgmGain.gain.setValueAtTime(this.bgmGain.gain.value, now);
+    this.bgmGain.gain.linearRampToValueAtTime(normal * .12, now + .025);
+    this.bgmGain.gain.setValueAtTime(normal * .12, now + effectDuration + .08);
+    this.bgmGain.gain.linearRampToValueAtTime(normal, now + effectDuration + .3);
+  }
 }

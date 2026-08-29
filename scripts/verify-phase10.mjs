@@ -11,6 +11,9 @@ for (const effect of ['tap', 'pet', 'request', 'happy', 'angry', 'sick', 'recove
 assert.match(audio, /document\.addEventListener\('pointerdown', this\.unlock/);
 assert.match(audio, /webkitAudioContext/);
 assert.match(audio, /pendingEffect/);
+assert.match(audio, /createMediaElementSource/);
+assert.match(audio, /duckBgm/);
+assert.match(audio, /\.28 \* this\.bgmVolume \* this\.bgmVolume/);
 assert.match(audio, /\.catch\(\(\) =>/);
 assert.match(audio, /pause\(\): void/);
 assert.match(audio, /resume\(\): void/);
