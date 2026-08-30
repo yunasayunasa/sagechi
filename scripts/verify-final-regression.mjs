@@ -36,5 +36,9 @@ assert.match(game, /if \(!this\.save\.settings\.tutorialSeen\) this\.showTutoria
 for (const track of ['cafe', 'battle', 'enzan']) assert.equal(existsSync(new URL(`../public/audio/${track}.mp3`, import.meta.url)), true);
 assert.equal(existsSync(new URL('../dist/server/index.js', import.meta.url)), true);
 assert.equal(existsSync(new URL('../dist/.openai/hosting.json', import.meta.url)), true);
+const pagesWorkflow = read('../.github/workflows/deploy-pages.yml');
+assert.match(pagesWorkflow, /npm run build/);
+assert.match(pagesWorkflow, /path: dist\/client/);
+assert.match(pagesWorkflow, /actions\/deploy-pages@v4/);
 
 process.stdout.write('Final tutorial, call, save migration, audio and deployment regression: PASS\n');
