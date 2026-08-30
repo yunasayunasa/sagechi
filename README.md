@@ -197,4 +197,4 @@ npm run analyze:worldtchi
 
 GitHub Actionsではpushとpull requestのたびに `npm run verify` を実行します。一般公開前には `GITHUB_RELEASE_CHECKLIST.md` を確認してください。
 
-現時点ではプロジェクト全体のLICENSEを意図的に設定していません。また、キャラクターGLBとBGMはCC0背景Assetとは権利条件が異なります。公開前にコードのライセンスを選び、これらのAssetを公開リポジトリで再配布できることを確認してください。
+本リポジトリはソース閲覧とゲーム実行のために公開していますが、オープンソースライセンスは付与していません。キャラクターGLBとBGMはCC0背景Assetとは権利条件が異なり、再利用・改変・再配布は許諾されません。詳細は `LICENSE` と `ASSET_LICENSES.md` を参照してください。

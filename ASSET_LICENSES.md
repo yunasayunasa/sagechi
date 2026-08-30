@@ -1,15 +1,15 @@
 # Asset Licenses
 
-## 公開前に権利確認が必要なAsset
+## Project-specific Assets
 
-以下は本プロジェクト専用に提供・生成されたAssetです。CC0ではなく、このリポジトリのソースコードに将来付与するライセンスの対象にも自動では含まれません。
+以下は本プロジェクト専用に提供・生成されたAssetです。CC0ではなく、閲覧・ゲーム実行以外の再利用、改変、再配布を許諾していません。
 
 - `assets/source-models/` と `public/models/` のキャラクターGLB
 - `public/audio/cafe.mp3`
 - `public/audio/battle.mp3`
 - `public/audio/enzan.mp3`
 
-GitHubリポジトリを一般公開する前に、権利者がこれらの再配布を許可できることを確認してください。確認できないAssetは公開履歴へ入れず、利用者が各自配置する方式へ変更する必要があります。
+これらのAssetはリポジトリのソースコードとは別の権利条件で提供されます。詳細は `LICENSE` を参照してください。
 
 ## Kenney Nature Kit
 

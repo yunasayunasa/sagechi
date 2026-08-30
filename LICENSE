@@ -1,0 +1,15 @@
+Copyright (c) 2026 賢者っち project contributors. All rights reserved.
+
+This repository is publicly available for source inspection and for running
+the 賢者っち game as provided. No permission is granted to copy, modify,
+distribute, sublicense, sell, or create derivative works from the source code
+or project-specific assets, except where permission is required solely to run
+an unmodified local copy for personal evaluation.
+
+Third-party CC0 assets identified in ASSET_LICENSES.md remain available under
+their respective terms. The character GLB files and BGM files identified as
+project-specific assets are not covered by those third-party terms and may not
+be reused, modified, or redistributed separately from this repository.
+
+For any use beyond personal evaluation, obtain prior written permission from
+the project rights holder.

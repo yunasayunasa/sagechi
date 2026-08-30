@@ -2,11 +2,8 @@
 
 ## 公開前に必ず決めること
 
-- [ ] ソースコードに適用するLICENSEを選び、`LICENSE`を追加する
-- [ ] キャラクターGLBを一般公開リポジトリで再配布できる権利があることを確認する
-- [ ] BGM 3曲を一般公開リポジトリで再配布できる権利があることを確認する
-- [ ] 再配布できないAssetがある場合、Git履歴へ公開する前に除外し、配置手順とサンプル設定を用意する
-- [ ] 公開先のGitHubリポジトリ名・説明・可視性を決める
+- [x] ソースコードと専用AssetをAll rights reservedとして明記する
+- [x] 公開先をGitHubのpublicリポジトリとする
 
 ## 公開直前の確認
 
@@ -23,8 +20,8 @@
 
 - GitHub Actions: 準備済み（`.github/workflows/verify.yml`）
 - 秘密情報の基本除外: 準備済み（`.gitignore`）
-- ソースコードLICENSE: 未選択
-- キャラクターGLB・BGMの再配布確認: 未確認
+- ソースコードLICENSE: All rights reserved（閲覧・実行のみ）
+- キャラクターGLB・BGM: 再利用・改変・再配布を許諾しない専用Asset
 - GitHubリポジトリ作成・remote追加・push: 未実施
 
-GitHubへの初回pushは、LICENSEとAsset再配布条件を確定した後に行ってください。
+公開後も、専用Assetへオープンライセンスを誤って付与しないでください。
