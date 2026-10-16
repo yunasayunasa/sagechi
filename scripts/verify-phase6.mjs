@@ -30,4 +30,36 @@ assert.equal(branch({ calm: 4, affection: 2, healthy: 4, playBook: 2, careSucces
 assert.equal(branch({ active: 6, playBall: 2, meat: 4, careSuccess: 8 }), 'black');
 assert.equal(branch({ active: 3, playRattle: 2, careDelay: 1, careSuccess: 8 }), 'black');
 assert.equal(GAME_CONFIG.evolution.blackBias, .9);
+// CareSystem の加算値で実プレイ手順を再現し、ヒント通りに育てたルートを検証する
+const careActions = {
+  vegetable: { healthy: 2, calm: 1, careSuccess: 1 }, sweet: { sweet: 2, careSuccess: 1 }, meat: { meat: 2, active: 1, careSuccess: 1 },
+  ball: { playBall: 1, active: 2, careSuccess: 1 }, rattle: { playRattle: 1, calm: 1, careSuccess: 1 }, book: { playBook: 1, calm: 2, careSuccess: 1 },
+  rest: { calm: 2, careSuccess: 1 }, pet: { affection: 1, calm: 1 }, delay: { active: 1, stress: 1, careDelay: 1 },
+};
+const raise = (history, counts) => {
+  const next = { ...history };
+  for (const [action, count] of Object.entries(counts)) for (const [key, value] of Object.entries(careActions[action])) next[key] += value * count;
+  return next;
+};
+const route = (youngCare, worldCare) => {
+  const young = raise(emptyHistory, youngCare);
+  return selectSageEvolution(branch(young), raise(young, worldCare)).id;
+};
+assert.equal(branch(raise(emptyHistory, { rattle: 8 })), 'white');
+assert.equal(route({ rattle: 8 }, { rattle: 8 }), 'lobelia');
+assert.equal(route({ rattle: 6, sweet: 2 }, { rattle: 6, rest: 2 }), 'lobelia');
+assert.equal(route({ rattle: 6, pet: 6 }, { rattle: 5, vegetable: 1, book: 1, rest: 1 }), 'lobelia');
+assert.equal(route({ ball: 10 }, { ball: 10 }), 'fraux');
+assert.equal(route({ delay: 8, pet: 15 }, { delay: 8, pet: 15 }), 'nier');
+assert.equal(route({ delay: 6, pet: 12, sweet: 2 }, { delay: 6, pet: 12, sweet: 2 }), 'nier');
+assert.equal(route({ delay: 8, pet: 3 }, { delay: 8, pet: 3 }), 'catzelia');
+assert.equal(route({ sweet: 8, pet: 10 }, { sweet: 8, pet: 10 }), 'maria-theresa');
+assert.equal(route({ rest: 8 }, { ball: 8 }), 'caim');
+const variety = { vegetable: 2, sweet: 2, meat: 1, ball: 1, rattle: 1, book: 1, rest: 1 };
+assert.equal(route(variety, variety), 'caim');
+assert.equal(route({ vegetable: 2, sweet: 2, meat: 2, ball: 2, rattle: 2, book: 2, rest: 2, pet: 4 }, { vegetable: 2, sweet: 2, meat: 2, ball: 2, rattle: 2, book: 2, rest: 2, pet: 4 }), 'caim');
+assert.equal(route({ vegetable: 6, rest: 2 }, { vegetable: 6, rest: 2 }), 'alanaan');
+assert.equal(route({ rest: 8 }, { rest: 8 }), 'haaselia');
+assert.equal(route({ book: 4, rest: 2, delay: 4 }, { book: 4, rest: 2, delay: 4 }), 'estarriola');
+assert.equal(route({ book: 4, delay: 5, pet: 2 }, { book: 4, delay: 5, pet: 2 }), 'estarriola');
 process.stdout.write('Phase 6 evolution routes: 10 / 10 reachable\n');
