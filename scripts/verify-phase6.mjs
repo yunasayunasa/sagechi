@@ -33,7 +33,7 @@ assert.equal(GAME_CONFIG.evolution.blackBias, .9);
 // CareSystem の加算値で実プレイ手順を再現し、ヒント通りに育てたルートを検証する
 const careActions = {
   vegetable: { healthy: 2, calm: 1, careSuccess: 1 }, sweet: { sweet: 2, careSuccess: 1 }, meat: { meat: 2, active: 1, careSuccess: 1 },
-  ball: { playBall: 1, active: 2, careSuccess: 1 }, rattle: { playRattle: 1, active: 1, careSuccess: 1 }, book: { playBook: 1, calm: 2, careSuccess: 1 },
+  ball: { playBall: 1, active: 2, careSuccess: 1 }, rattle: { playRattle: 1, calm: 1, careSuccess: 1 }, book: { playBook: 1, calm: 2, careSuccess: 1 },
   rest: { calm: 2, careSuccess: 1 }, pet: { affection: 1, calm: 1 }, delay: { active: 1, stress: 1, careDelay: 1 },
 };
 const raise = (history, counts) => {
@@ -45,10 +45,11 @@ const route = (youngCare, worldCare) => {
   const young = raise(emptyHistory, youngCare);
   return selectSageEvolution(branch(young), raise(young, worldCare)).id;
 };
-assert.equal(route({ rest: 8 }, { rattle: 8 }), 'lobelia');
-assert.equal(route({ book: 8 }, { rattle: 8 }), 'lobelia');
-assert.equal(route({ rest: 4, book: 4 }, { rattle: 7, rest: 1 }), 'lobelia');
-assert.equal(route({ rattle: 10 }, { rattle: 10 }), 'fraux');
+assert.equal(branch(raise(emptyHistory, { rattle: 8 })), 'white');
+assert.equal(route({ rattle: 8 }, { rattle: 8 }), 'lobelia');
+assert.equal(route({ rattle: 6, sweet: 2 }, { rattle: 6, rest: 2 }), 'lobelia');
+assert.equal(route({ rattle: 6, pet: 6 }, { rattle: 5, vegetable: 1, book: 1, rest: 1 }), 'lobelia');
+assert.equal(route({ ball: 10 }, { ball: 10 }), 'fraux');
 assert.equal(route({ delay: 8, pet: 15 }, { delay: 8, pet: 15 }), 'nier');
 assert.equal(route({ delay: 6, pet: 12, sweet: 2 }, { delay: 6, pet: 12, sweet: 2 }), 'nier');
 assert.equal(route({ delay: 8, pet: 3 }, { delay: 8, pet: 3 }), 'catzelia');

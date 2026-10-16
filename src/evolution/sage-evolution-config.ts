@@ -21,7 +21,7 @@ export interface EncyclopediaEntry {
 export const SAGE_EVOLUTIONS: readonly SageEvolutionEntry[] = Object.freeze([
   { id: 'maria-theresa', name: 'マリア・テレサっち', branch: 'white', description: '甘い時間とやさしいふれあいを大切にする賢者っち。', hint: '甘いものを好み、たくさん撫でられた子がたどり着くことがあるらしい。', weights: { sweet: 2.2, affection: 1.6, calm: .4 } },
   { id: 'caim', name: 'カイムっち', branch: 'white', description: '元気な遊びにも静かな時間にもまっすぐ向き合う賢者っち。', hint: 'いろいろなお世話にきちんと応えてもらった子がたどり着くことがあるらしい。', weights: { careSuccess: 1.4, playRattle: 1.5, healthy: .8 } },
-  { id: 'lobelia', name: 'ロベリアっち', branch: 'white', description: '好奇心の赴くまま、遊びの気配を探して暮らす賢者っち。', hint: '小さいころは静かに過ごし、大きくなってからガラガラ遊びに夢中になった子がたどり着くことがあるらしい。', weights: { playRattle: 4.5, active: .5, careSuccess: .5 } },
+  { id: 'lobelia', name: 'ロベリアっち', branch: 'white', description: '好奇心の赴くまま、遊びの気配を探して暮らす賢者っち。', hint: 'ガラガラ遊びをよく楽しんだ子がたどり着くことがあるらしい。', weights: { playRattle: 3, calm: .3, careSuccess: .5 } },
   { id: 'alanaan', name: 'アラナンっち', branch: 'white', description: '健やかな毎日を力に変え、穏やかに過ごす賢者っち。', hint: '野菜をよく食べ、元気に育った子がたどり着くことがあるらしい。', weights: { healthy: 2.4, careSuccess: .7, calm: .5 } },
   { id: 'haaselia', name: 'ハーゼリーラっち', branch: 'white', description: '絵本と静かな時間を好む、思慮深い賢者っち。', hint: '絵本を好み、ゆったり育った子がたどり着くことがあるらしい。', weights: { playBook: 2.5, calm: 1.1, affection: .3 } },
   { id: 'borghan', name: 'ボーガっち', branch: 'black', description: 'たくましい食事と刺激のある毎日を好む賢者っち。', hint: '肉をよく食べ、活発に育った子がたどり着くことがあるらしい。', weights: { meat: 2.4, active: 1, playBall: .4 } },

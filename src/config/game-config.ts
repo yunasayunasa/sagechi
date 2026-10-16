@@ -44,7 +44,7 @@ export const GAME_CONFIG = Object.freeze({
   evolution: {
     activeSeconds: 120, careCount: 8, durationSeconds: 3.2, juvenileScale: .7, scale: 1.08, blackBias: .9,
     calmWeights: { calm: .6, affection: .35, healthy: .3, playBook: .3, careSuccess: .05 },
-    activeWeights: { active: 1, playBall: .6, playRattle: .35, careDelay: 1.2, stress: .5, meat: .4 },
+    activeWeights: { active: 1, playBall: .6, careDelay: 1.2, stress: .5, meat: .4 },
   },
   generation: { eggActiveSeconds: 120, eggCareCount: 8, rareTartChance: .05 },
   save: { key: 'sagechi.phase12.save', schemaVersion: 14 },

@@ -99,7 +99,7 @@ export class CareSystem {
     }[choice];
     this.adjust(effects);
     if (choice === 'ball') { this.save.history.playBall += 1; this.save.history.active += 2; }
-    if (choice === 'rattle') { this.save.history.playRattle += 1; this.save.history.active += 1; }
+    if (choice === 'rattle') { this.save.history.playRattle += 1; this.save.history.calm += 1; }
     if (choice === 'book') { this.save.history.playBook += 1; this.save.history.calm += 2; }
     this.completeCare('いっしょに遊んでうれしそう！', 'happy');
   }
